@@ -128,7 +128,8 @@ app.get('/health', (req, res) => {
     uptime: process.uptime()
   };
   
-  res.json(healthData);
+  // Връщаме 200 OK дори когато MongoDB не е свързан
+  res.status(200).json(healthData);
 });
 
 // Connect to MongoDB with retry logic
@@ -138,7 +139,8 @@ const connectDB = async () => {
     console.log('🔍 Attempting to connect to MongoDB...');
     
     if (!mongoURI) {
-      throw new Error('MONGODB_URI environment variable is not set');
+      console.warn('⚠️ MONGODB_URI is not set, but continuing without database connection');
+      return;
     }
 
     // Добавяме опции за работа с публичен адрес
@@ -151,10 +153,10 @@ const connectDB = async () => {
       connectTimeoutMS: 30000,
       retryWrites: true,
       retryReads: true,
-      ssl: true, // Добавяме SSL
-      tls: true, // Добавяме TLS
-      tlsAllowInvalidCertificates: true, // Позволяваме самоподписани сертификати
-      tlsAllowInvalidHostnames: true // Позволяваме невалидни hostnames
+      ssl: true,
+      tls: true,
+      tlsAllowInvalidCertificates: true,
+      tlsAllowInvalidHostnames: true
     };
 
     console.log('📝 Connecting with options:', JSON.stringify(options, null, 2));
@@ -178,8 +180,15 @@ const connectDB = async () => {
   }
 };
 
-// Initialize database connection
-connectDB();
+// Инициализираме връзката с базата данни след като сървърът е стартан
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  
+  // Стартираме връзката с MongoDB след като сървърът е готов
+  connectDB();
+});
 
 // MongoDB connection event handlers
 mongoose.connection.on('disconnected', () => {
@@ -319,12 +328,6 @@ process.on('SIGINT', async () => {
   }
   
   process.exit(0);
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
 });
 
 module.exports = app;
