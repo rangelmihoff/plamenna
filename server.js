@@ -8,22 +8,13 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 
-// Import routes
-const shopifyRoutes = require('./routes/shopify');
-const aiRoutes = require('./routes/ai');
-const analyticsRoutes = require('./routes/analytics');
-const subscriptionRoutes = require('./routes/subscriptions');
-
-// Import services
-const DataSyncService = require('./services/dataSyncService');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Trust proxy for Railway/Heroku
 app.set('trust proxy', 1);
 
-// Security middleware
+// Basic middleware (load first)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -36,10 +27,9 @@ app.use(helmet({
   },
 }));
 
-// Compression for better performance
 app.use(compression());
 
-// Logging in production
+// Logging
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
 } else {
@@ -49,7 +39,6 @@ if (process.env.NODE_ENV === 'production') {
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
@@ -67,12 +56,7 @@ const corsOptions = {
       return allowed.test(origin);
     });
     
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.warn('CORS blocked origin:', origin);
-      callback(null, true); // Allow in development, block in production
-    }
+    callback(null, isAllowed || process.env.NODE_ENV === 'development');
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -81,151 +65,57 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Rate limiting with different limits for different endpoints
+// Rate limiting
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 50 API requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 50,
   message: 'Too many API requests from this IP, please try again later.',
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: 'Too many authentication attempts, please try again later.',
 });
-
-// Apply rate limiting
-app.use('/api/ai', apiLimiter);
-app.use('/api/shopify/install', authLimiter);
-app.use('/api/shopify/callback', authLimiter);
-app.use(generalLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint (before database connection)
+// Health check endpoint (BEFORE database connection and routes)
 app.get('/health', (req, res) => {
-  const healthData = {
+  const healthStatus = {
     status: 'OK',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
-    mongodb: {
-      connected: mongoose.connection.readyState === 1,
-      state: mongoose.connection.readyState,
-      uri: process.env.MONGODB_URI ? 'configured' : 'not configured'
-    },
-    port: process.env.PORT || 3000,
-    uptime: process.uptime()
+    port: PORT
   };
-  
-  // Връщаме 200 OK дори когато MongoDB не е свързан
-  res.status(200).json(healthData);
-});
 
-// Connect to MongoDB with retry logic
-const connectDB = async () => {
-  try {
-    const mongoURI = process.env.MONGODB_URI;
-    console.log('🔍 Attempting to connect to MongoDB...');
-    
-    if (!mongoURI) {
-      console.warn('⚠️ MONGODB_URI is not set, but continuing without database connection');
-      return;
-    }
-
-    // Добавяме опции за работа с публичен адрес
-    const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 30000,
-      retryWrites: true,
-      retryReads: true,
-      ssl: true,
-      tls: true,
-      tlsAllowInvalidCertificates: true,
-      tlsAllowInvalidHostnames: true
-    };
-
-    console.log('📝 Connecting with options:', JSON.stringify(options, null, 2));
-    
-    await mongoose.connect(mongoURI, options);
-
-    console.log('✅ Connected to MongoDB successfully');
-    console.log('📊 Database name:', mongoose.connection.name);
-    console.log('🔌 Connection state:', mongoose.connection.readyState);
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
-    console.error('🔍 Error details:', {
-      name: error.name,
-      code: error.code,
-      stack: error.stack
-    });
-    
-    // Retry connection after 5 seconds
-    console.log('🔄 Retrying MongoDB connection in 5 seconds...');
-    setTimeout(connectDB, 5000);
+  // Optional: Add database status if connected
+  if (mongoose.connection.readyState === 1) {
+    healthStatus.database = 'connected';
+  } else {
+    healthStatus.database = 'connecting';
   }
-};
 
-// Инициализираме връзката с базата данни след като сървърът е стартан
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  
-  // Стартираме връзката с MongoDB след като сървърът е готов
-  connectDB();
+  res.status(200).json(healthStatus);
 });
-
-// MongoDB connection event handlers
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
-  connectDB();
-});
-
-mongoose.connection.on('error', (error) => {
-  console.error('❌ MongoDB error:', error.message);
-  console.error('🔍 Error details:', {
-    name: error.name,
-    code: error.code,
-    stack: error.stack
-  });
-});
-
-// Добавяме handler за успешна връзка
-mongoose.connection.on('connected', () => {
-  console.log('✅ MongoDB connection established');
-});
-
-// Добавяме handler за отворена връзка
-mongoose.connection.on('open', () => {
-  console.log('🔓 MongoDB connection opened');
-});
-
-// Routes
-app.use('/api/shopify', shopifyRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
     message: 'Shopify AI SEO 2.0 API',
     version: '1.0.0',
+    status: 'running',
     endpoints: {
       health: '/health',
       install: '/api/shopify/install?shop=your-store.myshopify.com',
@@ -234,54 +124,147 @@ app.get('/', (req, res) => {
   });
 });
 
-// Cron jobs for data synchronization (only in production)
-if (process.env.NODE_ENV === 'production') {
-  // Basic plan: every 24 hours
-  cron.schedule('0 0 * * *', async () => {
-    console.log('🔄 Running daily sync for basic plan users');
-    try {
-      await DataSyncService.syncBasicPlanStores();
-    } catch (error) {
-      console.error('❌ Basic plan sync failed:', error);
-    }
-  });
+// Start server FIRST, then connect to database
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  
+  // Now connect to database after server is running
+  connectDB();
+});
 
-  // Standard plan: every 12 hours
-  cron.schedule('0 */12 * * *', async () => {
-    console.log('🔄 Running 12-hour sync for standard plan users');
-    try {
-      await DataSyncService.syncStandardPlanStores();
-    } catch (error) {
-      console.error('❌ Standard plan sync failed:', error);
+// Connect to MongoDB with retry logic (AFTER server starts)
+const connectDB = async () => {
+  try {
+    const mongoURI = process.env.MONGODB_URI;
+    if (!mongoURI) {
+      console.warn('⚠️ MONGODB_URI not set. Database features will be disabled.');
+      return;
     }
-  });
 
-  // Growth plan: every 6 hours
-  cron.schedule('0 */6 * * *', async () => {
-    console.log('🔄 Running 6-hour sync for growth plan users');
-    try {
-      await DataSyncService.syncGrowthPlanStores();
-    } catch (error) {
-      console.error('❌ Growth plan sync failed:', error);
-    }
-  });
+    console.log('🔄 Connecting to MongoDB...');
+    await mongoose.connect(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferMaxEntries: 0,
+      bufferCommands: false,
+    });
 
-  // Premium plan: every 2 hours
-  cron.schedule('0 */2 * * *', async () => {
-    console.log('🔄 Running 2-hour sync for premium plan users');
-    try {
-      await DataSyncService.syncPremiumPlanStores();
-    } catch (error) {
-      console.error('❌ Premium plan sync failed:', error);
-    }
-  });
-}
+    console.log('✅ Connected to MongoDB');
+    
+    // Initialize routes AFTER database connection
+    initializeRoutes();
+    
+    // Initialize cron jobs AFTER routes
+    initializeCronJobs();
+    
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+    console.log('⚠️ Continuing without database. Some features will be disabled.');
+  }
+};
+
+// Initialize routes after database connection
+const initializeRoutes = () => {
+  try {
+    // Import routes
+    const shopifyRoutes = require('./routes/shopify');
+    const aiRoutes = require('./routes/ai');
+    const analyticsRoutes = require('./routes/analytics');
+    const subscriptionRoutes = require('./routes/subscriptions');
+
+    // Apply rate limiting
+    app.use('/api/ai', apiLimiter);
+    app.use('/api/shopify/install', authLimiter);
+    app.use('/api/shopify/callback', authLimiter);
+    app.use(generalLimiter);
+
+    // Routes
+    app.use('/api/shopify', shopifyRoutes);
+    app.use('/api/ai', aiRoutes);
+    app.use('/api/analytics', analyticsRoutes);
+    app.use('/api/subscriptions', subscriptionRoutes);
+
+    console.log('✅ Routes initialized');
+  } catch (error) {
+    console.error('❌ Error initializing routes:', error.message);
+  }
+};
+
+// Initialize cron jobs
+const initializeCronJobs = () => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('⚠️ Cron jobs disabled in development mode');
+    return;
+  }
+
+  try {
+    const DataSyncService = require('./services/dataSyncService');
+
+    // Basic plan: every 24 hours
+    cron.schedule('0 0 * * *', async () => {
+      console.log('🔄 Running daily sync for basic plan users');
+      try {
+        await DataSyncService.syncBasicPlanStores();
+      } catch (error) {
+        console.error('❌ Basic plan sync failed:', error);
+      }
+    });
+
+    // Standard plan: every 12 hours
+    cron.schedule('0 */12 * * *', async () => {
+      console.log('🔄 Running 12-hour sync for standard plan users');
+      try {
+        await DataSyncService.syncStandardPlanStores();
+      } catch (error) {
+        console.error('❌ Standard plan sync failed:', error);
+      }
+    });
+
+    // Growth plan: every 6 hours
+    cron.schedule('0 */6 * * *', async () => {
+      console.log('🔄 Running 6-hour sync for growth plan users');
+      try {
+        await DataSyncService.syncGrowthPlanStores();
+      } catch (error) {
+        console.error('❌ Growth plan sync failed:', error);
+      }
+    });
+
+    // Premium plan: every 2 hours
+    cron.schedule('0 */2 * * *', async () => {
+      console.log('🔄 Running 2-hour sync for premium plan users');
+      try {
+        await DataSyncService.syncPremiumPlanStores();
+      } catch (error) {
+        console.error('❌ Premium plan sync failed:', error);
+      }
+    });
+
+    console.log('✅ Cron jobs initialized');
+  } catch (error) {
+    console.error('❌ Error initializing cron jobs:', error.message);
+  }
+};
+
+// MongoDB connection event handlers
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
+  setTimeout(connectDB, 5000);
+});
+
+mongoose.connection.on('error', (error) => {
+  console.error('❌ MongoDB error:', error.message);
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('❌ Unhandled error:', error);
   
-  // Don't expose error details in production
   const errorMessage = process.env.NODE_ENV === 'production' 
     ? 'Internal server error' 
     : error.message;
@@ -304,30 +287,41 @@ app.use((req, res) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('🛑 SIGTERM received. Shutting down gracefully...');
+const gracefulShutdown = async (signal) => {
+  console.log(`🛑 ${signal} received. Shutting down gracefully...`);
   
+  // Close server first
+  server.close((err) => {
+    if (err) {
+      console.error('❌ Error closing server:', err);
+    } else {
+      console.log('✅ Server closed');
+    }
+  });
+
+  // Close database connection
   try {
     await mongoose.connection.close();
-    console.log('✅ MongoDB connection closed.');
+    console.log('✅ MongoDB connection closed');
   } catch (error) {
     console.error('❌ Error closing MongoDB connection:', error);
   }
   
   process.exit(0);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
-process.on('SIGINT', async () => {
-  console.log('🛑 SIGINT received. Shutting down gracefully...');
-  
-  try {
-    await mongoose.connection.close();
-    console.log('✅ MongoDB connection closed.');
-  } catch (error) {
-    console.error('❌ Error closing MongoDB connection:', error);
-  }
-  
-  process.exit(0);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('UNHANDLED_REJECTION');
 });
 
 module.exports = app;
