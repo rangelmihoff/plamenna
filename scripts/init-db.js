@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { subscriptionPlans } = require('../models/Subscription');
+const { subscriptionPlans } = require('../models/subscription');
 
 async function initializeDatabase() {
   try {

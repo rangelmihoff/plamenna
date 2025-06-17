@@ -1,6 +1,6 @@
 const express = require('express');
 const Store = require('../models/Store');
-const { subscriptionPlans } = require('../models/Subscription');
+const { subscriptionPlans } = require('../models/subscription');
 const router = express.Router();
 
 // Get available subscription plans
