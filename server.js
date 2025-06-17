@@ -114,12 +114,21 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check endpoint (before database connection)
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  const healthData = {
+    status: 'OK',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
-  });
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: {
+      connected: mongoose.connection.readyState === 1,
+      state: mongoose.connection.readyState,
+      uri: process.env.MONGODB_URI ? 'configured' : 'not configured'
+    },
+    port: process.env.PORT || 3000,
+    uptime: process.uptime()
+  };
+  
+  res.json(healthData);
 });
 
 // Connect to MongoDB with retry logic
