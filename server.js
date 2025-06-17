@@ -135,21 +135,42 @@ app.get('/health', (req, res) => {
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
+    console.log('🔍 Attempting to connect to MongoDB...');
+    
     if (!mongoURI) {
       throw new Error('MONGODB_URI environment variable is not set');
     }
 
-    await mongoose.connect(mongoURI, {
+    // Добавяме опции за работа с публичен адрес
+    const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-    });
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 30000,
+      retryWrites: true,
+      retryReads: true,
+      ssl: true, // Добавяме SSL
+      tls: true, // Добавяме TLS
+      tlsAllowInvalidCertificates: true, // Позволяваме самоподписани сертификати
+      tlsAllowInvalidHostnames: true // Позволяваме невалидни hostnames
+    };
 
-    console.log('✅ Connected to MongoDB');
+    console.log('📝 Connecting with options:', JSON.stringify(options, null, 2));
+    
+    await mongoose.connect(mongoURI, options);
+
+    console.log('✅ Connected to MongoDB successfully');
+    console.log('📊 Database name:', mongoose.connection.name);
+    console.log('🔌 Connection state:', mongoose.connection.readyState);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
+    console.error('🔍 Error details:', {
+      name: error.name,
+      code: error.code,
+      stack: error.stack
+    });
     
     // Retry connection after 5 seconds
     console.log('🔄 Retrying MongoDB connection in 5 seconds...');
@@ -168,6 +189,21 @@ mongoose.connection.on('disconnected', () => {
 
 mongoose.connection.on('error', (error) => {
   console.error('❌ MongoDB error:', error.message);
+  console.error('🔍 Error details:', {
+    name: error.name,
+    code: error.code,
+    stack: error.stack
+  });
+});
+
+// Добавяме handler за успешна връзка
+mongoose.connection.on('connected', () => {
+  console.log('✅ MongoDB connection established');
+});
+
+// Добавяме handler за отворена връзка
+mongoose.connection.on('open', () => {
+  console.log('🔓 MongoDB connection opened');
 });
 
 // Routes
