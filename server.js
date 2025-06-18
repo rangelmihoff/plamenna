@@ -105,14 +105,16 @@ app.get('/api/shopify/install', (req, res) => {
     return res.status(400).json({ error: 'Shop parameter is required' });
   }
 
-  // Basic validation for Shopify domain format
   const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
   if (!shopRegex.test(shop)) {
     return res.status(400).json({ error: 'Invalid shop domain format' });
   }
 
   const scopes = 'read_products,read_product_listings';
-  const redirectUri = `${process.env.BASE_URL}/api/shopify/callback`;
+  
+  // FIXED: Remove trailing slash
+  const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://shopify-ai-seo-20-production.up.railway.app';
+  const redirectUri = `${baseUrl}/api/shopify/callback`;
   const state = Math.random().toString(36).substring(7);
   
   const installUrl = `https://${shop}/admin/oauth/authorize?` +
@@ -122,7 +124,8 @@ app.get('/api/shopify/install', (req, res) => {
     `state=${state}`;
 
   console.log(`📦 Install request for shop: ${shop}`);
-  console.log(`🔗 Redirecting to: ${installUrl}`);
+  console.log(`🔧 Base URL: ${baseUrl}`);
+  console.log(`🔗 Redirect URI: ${redirectUri}`);
   
   res.redirect(installUrl);
 });
