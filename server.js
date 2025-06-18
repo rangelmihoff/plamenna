@@ -99,35 +99,45 @@ app.get('/', (req, res) => {
 
 // Shopify Install Route
 app.get('/api/shopify/install', (req, res) => {
-  const { shop } = req.query;
-  
-  if (!shop) {
-    return res.status(400).json({ error: 'Shop parameter is required' });
+  try {
+    const { shop } = req.query;
+    
+    console.log(`📦 Install request for shop: ${shop}`);
+    console.log(`🔧 SHOPIFY_API_KEY: ${process.env.SHOPIFY_API_KEY ? 'Present' : 'Missing'}`);
+    console.log(`🔧 BASE_URL: ${process.env.BASE_URL}`);
+    
+    if (!shop) {
+      return res.status(400).json({ error: 'Shop parameter is required' });
+    }
+
+    if (!process.env.SHOPIFY_API_KEY) {
+      return res.status(500).json({ error: 'SHOPIFY_API_KEY not configured' });
+    }
+
+    const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
+    if (!shopRegex.test(shop)) {
+      return res.status(400).json({ error: 'Invalid shop domain format' });
+    }
+
+    const scopes = 'read_products,read_product_listings';
+    const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://shopify-ai-seo-20-production.up.railway.app';
+    const redirectUri = `${baseUrl}/api/shopify/callback`;
+    const state = Math.random().toString(36).substring(7);
+    
+    const installUrl = `https://${shop}/admin/oauth/authorize?` +
+      `client_id=${process.env.SHOPIFY_API_KEY}&` +
+      `scope=${scopes}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `state=${state}`;
+
+    console.log(`🔗 Redirect URI: ${redirectUri}`);
+    console.log(`🔗 Full install URL: ${installUrl}`);
+    
+    res.redirect(installUrl);
+  } catch (error) {
+    console.error('❌ Install route error:', error);
+    res.status(500).json({ error: 'Install failed', details: error.message });
   }
-
-  const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
-  if (!shopRegex.test(shop)) {
-    return res.status(400).json({ error: 'Invalid shop domain format' });
-  }
-
-  const scopes = 'read_products,read_product_listings';
-  
-  // FIXED: Remove trailing slash
-  const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://shopify-ai-seo-20-production.up.railway.app';
-  const redirectUri = `${baseUrl}/api/shopify/callback`;
-  const state = Math.random().toString(36).substring(7);
-  
-  const installUrl = `https://${shop}/admin/oauth/authorize?` +
-    `client_id=${process.env.SHOPIFY_API_KEY}&` +
-    `scope=${scopes}&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-    `state=${state}`;
-
-  console.log(`📦 Install request for shop: ${shop}`);
-  console.log(`🔧 Base URL: ${baseUrl}`);
-  console.log(`🔗 Redirect URI: ${redirectUri}`);
-  
-  res.redirect(installUrl);
 });
 
 // Shopify OAuth Callback
