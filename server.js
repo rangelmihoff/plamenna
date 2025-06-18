@@ -6,7 +6,6 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const cron = require('node-cron');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 // Trust proxy for Railway/Heroku
 app.set('trust proxy', 1);
 
-// Basic middleware (load first)
+// Basic middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -28,13 +27,7 @@ app.use(helmet({
 }));
 
 app.use(compression());
-
-// Logging
-if (process.env.NODE_ENV === 'production') {
-  app.use(morgan('combined'));
-} else {
-  app.use(morgan('dev'));
-}
+app.use(morgan('combined'));
 
 // CORS configuration
 const corsOptions = {
@@ -65,32 +58,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Rate limiting
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  message: 'Too many API requests from this IP, please try again later.',
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: 'Too many authentication attempts, please try again later.',
-});
-
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint (BEFORE everything)
+// Health check endpoint
 app.get('/health', (req, res) => {
   const healthStatus = {
     status: 'OK',
@@ -100,7 +72,6 @@ app.get('/health', (req, res) => {
     port: PORT
   };
 
-  // Optional: Add database status if connected
   if (mongoose.connection.readyState === 1) {
     healthStatus.database = 'connected';
   } else if (mongoose.connection.readyState === 2) {
@@ -126,144 +97,143 @@ app.get('/', (req, res) => {
   });
 });
 
-// Initialize routes IMMEDIATELY (not waiting for database)
-const initializeRoutes = () => {
-  try {
-    console.log('🔄 Initializing routes...');
-    
-    // Import routes
-    const shopifyRoutes = require('./routes/shopify');
-    const aiRoutes = require('./routes/ai');
-    const analyticsRoutes = require('./routes/analytics');
-    const subscriptionRoutes = require('./routes/subscriptions');
-
-    // Apply rate limiting
-    app.use('/api/ai', apiLimiter);
-    app.use('/api/shopify/install', authLimiter);
-    app.use('/api/shopify/callback', authLimiter);
-    app.use(generalLimiter);
-
-    // Routes
-    app.use('/api/shopify', shopifyRoutes);
-    app.use('/api/ai', aiRoutes);
-    app.use('/api/analytics', analyticsRoutes);
-    app.use('/api/subscriptions', subscriptionRoutes);
-
-    console.log('✅ Routes initialized successfully');
-  } catch (error) {
-    console.error('❌ Error initializing routes:', error.message);
-    console.error('Stack:', error.stack);
+// Shopify Install Route
+app.get('/api/shopify/install', (req, res) => {
+  const { shop } = req.query;
+  
+  if (!shop) {
+    return res.status(400).json({ error: 'Shop parameter is required' });
   }
-};
 
-// Initialize routes BEFORE starting server
-initializeRoutes();
+  // Basic validation for Shopify domain format
+  const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
+  if (!shopRegex.test(shop)) {
+    return res.status(400).json({ error: 'Invalid shop domain format' });
+  }
 
-// Start server
+  const scopes = 'read_products,read_product_listings';
+  const redirectUri = `${process.env.BASE_URL}/api/shopify/callback`;
+  const state = Math.random().toString(36).substring(7);
+  
+  const installUrl = `https://${shop}/admin/oauth/authorize?` +
+    `client_id=${process.env.SHOPIFY_API_KEY}&` +
+    `scope=${scopes}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `state=${state}`;
+
+  console.log(`📦 Install request for shop: ${shop}`);
+  console.log(`🔗 Redirecting to: ${installUrl}`);
+  
+  res.redirect(installUrl);
+});
+
+// Shopify OAuth Callback
+app.get('/api/shopify/callback', async (req, res) => {
+  const { code, shop, state } = req.query;
+  
+  console.log(`✅ OAuth callback received for shop: ${shop}`);
+  console.log(`📝 Code: ${code ? 'Present' : 'Missing'}`);
+  
+  if (!code || !shop) {
+    return res.status(400).json({ error: 'Missing required OAuth parameters' });
+  }
+
+  try {
+    // Exchange code for access token
+    const axios = require('axios');
+    const tokenResponse = await axios.post(`https://${shop}/admin/oauth/access_token`, {
+      client_id: process.env.SHOPIFY_API_KEY,
+      client_secret: process.env.SHOPIFY_API_SECRET,
+      code: code
+    });
+
+    const { access_token } = tokenResponse.data;
+    console.log(`🎉 Access token received for ${shop}`);
+
+    // For now, return success message
+    res.json({
+      success: true,
+      message: `App successfully installed on ${shop}!`,
+      shop: shop,
+      note: 'OAuth flow completed successfully. Database integration coming next...'
+    });
+
+  } catch (error) {
+    console.error(`❌ OAuth error for ${shop}:`, error.message);
+    res.status(500).json({
+      error: 'OAuth flow failed',
+      details: error.message
+    });
+  }
+});
+
+// AI Test Connectivity
+app.get('/api/ai/test-connectivity', (req, res) => {
+  res.json({
+    success: true,
+    message: 'API routes are working!',
+    providers: {
+      claude: process.env.CLAUDE_API_KEY ? 'configured' : 'missing',
+      openai: process.env.OPENAI_API_KEY ? 'configured' : 'missing',
+      gemini: process.env.GEMINI_API_KEY ? 'configured' : 'missing',
+      deepseek: process.env.DEEPSEEK_API_KEY ? 'configured' : 'missing',
+      llama: process.env.LLAMA_API_KEY ? 'configured' : 'missing'
+    }
+  });
+});
+
+// Start server FIRST
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 Install URL: http://localhost:${PORT}/api/shopify/install?shop=your-store.myshopify.com`);
+  console.log(`🔗 Health check: https://shopify-ai-seo-20-production.up.railway.app/health`);
+  console.log(`🔗 Install URL: https://shopify-ai-seo-20-production.up.railway.app/api/shopify/install?shop=your-store.myshopify.com`);
   
-  // Connect to database AFTER server starts (but don't wait for it)
+  // Connect to database AFTER server starts (non-blocking)
   connectDB();
 });
 
-// Connect to MongoDB with retry logic (AFTER server starts, non-blocking)
+// Fixed MongoDB connection options
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
     if (!mongoURI) {
-      console.warn('⚠️ MONGODB_URI not set. Database features will be disabled.');
+      console.warn('⚠️ MONGODB_URI not set. App will work without database.');
       return;
     }
 
     console.log('🔄 Connecting to MongoDB...');
+    
+    // Updated connection options (removed deprecated ones)
     await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      bufferMaxEntries: 0,
-      bufferCommands: false,
+      maxPoolSize: 10, // Maximum connections in the pool
+      serverSelectionTimeoutMS: 5000, // Timeout for server selection
+      socketTimeoutMS: 45000, // Socket timeout
+      family: 4 // Use IPv4, skip trying IPv6
     });
 
-    console.log('✅ Connected to MongoDB');
-    
-    // Initialize cron jobs AFTER database connection
-    initializeCronJobs();
-    
+    console.log('✅ Connected to MongoDB successfully!');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
-    console.log('⚠️ Continuing without database. Some features will be disabled.');
+    console.log('⚠️ App will continue without database. Database features disabled.');
     
-    // Retry connection after 10 seconds
-    setTimeout(connectDB, 10000);
-  }
-};
-
-// Initialize cron jobs
-const initializeCronJobs = () => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('⚠️ Cron jobs disabled in development mode');
-    return;
-  }
-
-  try {
-    const DataSyncService = require('./services/dataSyncService');
-
-    // Basic plan: every 24 hours
-    cron.schedule('0 0 * * *', async () => {
-      console.log('🔄 Running daily sync for basic plan users');
-      try {
-        await DataSyncService.syncBasicPlanStores();
-      } catch (error) {
-        console.error('❌ Basic plan sync failed:', error);
-      }
-    });
-
-    // Standard plan: every 12 hours
-    cron.schedule('0 */12 * * *', async () => {
-      console.log('🔄 Running 12-hour sync for standard plan users');
-      try {
-        await DataSyncService.syncStandardPlanStores();
-      } catch (error) {
-        console.error('❌ Standard plan sync failed:', error);
-      }
-    });
-
-    // Growth plan: every 6 hours
-    cron.schedule('0 */6 * * *', async () => {
-      console.log('🔄 Running 6-hour sync for growth plan users');
-      try {
-        await DataSyncService.syncGrowthPlanStores();
-      } catch (error) {
-        console.error('❌ Growth plan sync failed:', error);
-      }
-    });
-
-    // Premium plan: every 2 hours
-    cron.schedule('0 */2 * * *', async () => {
-      console.log('🔄 Running 2-hour sync for premium plan users');
-      try {
-        await DataSyncService.syncPremiumPlanStores();
-      } catch (error) {
-        console.error('❌ Premium plan sync failed:', error);
-      }
-    });
-
-    console.log('✅ Cron jobs initialized');
-  } catch (error) {
-    console.error('❌ Error initializing cron jobs:', error.message);
+    // Retry connection after 30 seconds
+    setTimeout(() => {
+      console.log('🔄 Retrying MongoDB connection...');
+      connectDB();
+    }, 30000);
   }
 };
 
 // MongoDB connection event handlers
+mongoose.connection.on('connected', () => {
+  console.log('✅ MongoDB connected successfully');
+});
+
 mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
-  setTimeout(connectDB, 5000);
+  console.log('⚠️ MongoDB disconnected');
 });
 
 mongoose.connection.on('error', (error) => {
@@ -303,41 +273,22 @@ app.use((req, res) => {
 });
 
 // Graceful shutdown
-const gracefulShutdown = async (signal) => {
-  console.log(`🛑 ${signal} received. Shutting down gracefully...`);
-  
-  // Close server first
-  server.close((err) => {
-    if (err) {
-      console.error('❌ Error closing server:', err);
-    } else {
-      console.log('✅ Server closed');
-    }
-  });
-
-  // Close database connection
-  try {
+process.on('SIGTERM', async () => {
+  console.log('🛑 SIGTERM received. Shutting down gracefully...');
+  server.close();
+  if (mongoose.connection.readyState === 1) {
     await mongoose.connection.close();
-    console.log('✅ MongoDB connection closed');
-  } catch (error) {
-    console.error('❌ Error closing MongoDB connection:', error);
   }
-  
   process.exit(0);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
-  gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  gracefulShutdown('UNHANDLED_REJECTION');
+process.on('SIGINT', async () => {
+  console.log('🛑 SIGINT received. Shutting down gracefully...');
+  server.close();
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.connection.close();
+  }
+  process.exit(0);
 });
 
 module.exports = app;
