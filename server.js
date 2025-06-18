@@ -90,7 +90,7 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint (BEFORE database connection and routes)
+// Health check endpoint (BEFORE everything)
 app.get('/health', (req, res) => {
   const healthStatus = {
     status: 'OK',
@@ -103,8 +103,10 @@ app.get('/health', (req, res) => {
   // Optional: Add database status if connected
   if (mongoose.connection.readyState === 1) {
     healthStatus.database = 'connected';
-  } else {
+  } else if (mongoose.connection.readyState === 2) {
     healthStatus.database = 'connecting';
+  } else {
+    healthStatus.database = 'disconnected';
   }
 
   res.status(200).json(healthStatus);
@@ -124,17 +126,51 @@ app.get('/', (req, res) => {
   });
 });
 
-// Start server FIRST, then connect to database
+// Initialize routes IMMEDIATELY (not waiting for database)
+const initializeRoutes = () => {
+  try {
+    console.log('🔄 Initializing routes...');
+    
+    // Import routes
+    const shopifyRoutes = require('./routes/shopify');
+    const aiRoutes = require('./routes/ai');
+    const analyticsRoutes = require('./routes/analytics');
+    const subscriptionRoutes = require('./routes/subscriptions');
+
+    // Apply rate limiting
+    app.use('/api/ai', apiLimiter);
+    app.use('/api/shopify/install', authLimiter);
+    app.use('/api/shopify/callback', authLimiter);
+    app.use(generalLimiter);
+
+    // Routes
+    app.use('/api/shopify', shopifyRoutes);
+    app.use('/api/ai', aiRoutes);
+    app.use('/api/analytics', analyticsRoutes);
+    app.use('/api/subscriptions', subscriptionRoutes);
+
+    console.log('✅ Routes initialized successfully');
+  } catch (error) {
+    console.error('❌ Error initializing routes:', error.message);
+    console.error('Stack:', error.stack);
+  }
+};
+
+// Initialize routes BEFORE starting server
+initializeRoutes();
+
+// Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔗 Install URL: http://localhost:${PORT}/api/shopify/install?shop=your-store.myshopify.com`);
   
-  // Now connect to database after server is running
+  // Connect to database AFTER server starts (but don't wait for it)
   connectDB();
 });
 
-// Connect to MongoDB with retry logic (AFTER server starts)
+// Connect to MongoDB with retry logic (AFTER server starts, non-blocking)
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
@@ -156,42 +192,15 @@ const connectDB = async () => {
 
     console.log('✅ Connected to MongoDB');
     
-    // Initialize routes AFTER database connection
-    initializeRoutes();
-    
-    // Initialize cron jobs AFTER routes
+    // Initialize cron jobs AFTER database connection
     initializeCronJobs();
     
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     console.log('⚠️ Continuing without database. Some features will be disabled.');
-  }
-};
-
-// Initialize routes after database connection
-const initializeRoutes = () => {
-  try {
-    // Import routes
-    const shopifyRoutes = require('./routes/shopify');
-    const aiRoutes = require('./routes/ai');
-    const analyticsRoutes = require('./routes/analytics');
-    const subscriptionRoutes = require('./routes/subscriptions');
-
-    // Apply rate limiting
-    app.use('/api/ai', apiLimiter);
-    app.use('/api/shopify/install', authLimiter);
-    app.use('/api/shopify/callback', authLimiter);
-    app.use(generalLimiter);
-
-    // Routes
-    app.use('/api/shopify', shopifyRoutes);
-    app.use('/api/ai', aiRoutes);
-    app.use('/api/analytics', analyticsRoutes);
-    app.use('/api/subscriptions', subscriptionRoutes);
-
-    console.log('✅ Routes initialized');
-  } catch (error) {
-    console.error('❌ Error initializing routes:', error.message);
+    
+    // Retry connection after 10 seconds
+    setTimeout(connectDB, 10000);
   }
 };
 
@@ -282,7 +291,14 @@ app.use((req, res) => {
     error: 'Route not found',
     path: req.path,
     method: req.method,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    availableRoutes: [
+      '/health',
+      '/',
+      '/api/shopify/install',
+      '/api/shopify/callback',
+      '/api/ai/test-connectivity'
+    ]
   });
 });
 
