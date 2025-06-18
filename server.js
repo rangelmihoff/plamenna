@@ -85,16 +85,46 @@ app.get('/health', (req, res) => {
 
 // Root endpoint
 app.get('/', (req, res) => {
-  res.json({
-    message: 'Shopify AI SEO 2.0 API',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: {
-      health: '/health',
-      install: '/api/shopify/install?shop=your-store.myshopify.com',
-      docs: 'https://github.com/yourusername/shopify-ai-seo-app'
-    }
-  });
+  const { shop } = req.query;
+  
+  if (shop) {
+    // If shop parameter provided, redirect to install
+    return res.redirect(`/api/shopify/install?shop=${shop}`);
+  }
+  
+  // Otherwise show app info page
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>AI SEO 2.0 - Shopify App</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .install-form { background: #f8f9fa; padding: 20px; border-radius: 8px; }
+        input { padding: 10px; width: 300px; margin: 10px; }
+        button { padding: 10px 20px; background: #5865f2; color: white; border: none; border-radius: 4px; }
+      </style>
+    </head>
+    <body>
+      <h1>🚀 AI SEO 2.0</h1>
+      <p>Connect your Shopify store to Claude, OpenAI, Gemini, DeepSeek, and Llama.</p>
+      
+      <div class="install-form">
+        <h3>Install App</h3>
+        <form action="/api/shopify/install" method="GET">
+          <input type="text" name="shop" placeholder="your-store.myshopify.com" required>
+          <button type="submit">Install App</button>
+        </form>
+      </div>
+      
+      <h3>Endpoints:</h3>
+      <ul>
+        <li><a href="/health">Health Check</a></li>
+        <li><a href="/api/ai/test-connectivity">AI Connectivity Test</a></li>
+      </ul>
+    </body>
+    </html>
+  `);
 });
 
 // Shopify Install Route
