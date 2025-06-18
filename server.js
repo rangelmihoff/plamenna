@@ -107,18 +107,18 @@ app.get('/api/shopify/install', (req, res) => {
     console.log(`🔧 BASE_URL: ${process.env.BASE_URL}`);
     
     if (!shop) {
+      console.log('❌ No shop parameter');
       return res.status(400).json({ error: 'Shop parameter is required' });
     }
-
     if (!process.env.SHOPIFY_API_KEY) {
+      console.log('❌ Missing SHOPIFY_API_KEY');
       return res.status(500).json({ error: 'SHOPIFY_API_KEY not configured' });
     }
-
     const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
     if (!shopRegex.test(shop)) {
+      console.log('❌ Invalid shop domain');
       return res.status(400).json({ error: 'Invalid shop domain format' });
     }
-
     const scopes = 'read_products,read_product_listings';
     const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://shopify-ai-seo-20-production.up.railway.app';
     const redirectUri = `${baseUrl}/api/shopify/callback`;
@@ -129,11 +129,13 @@ app.get('/api/shopify/install', (req, res) => {
       `scope=${scopes}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `state=${state}`;
-
     console.log(`🔗 Redirect URI: ${redirectUri}`);
-    console.log(`🔗 Full install URL: ${installUrl}`);
+    console.log(`🔗 Install URL: ${installUrl}`);
+    console.log(`🚀 Attempting redirect...`);
     
     res.redirect(installUrl);
+    
+    console.log(`✅ Redirect sent successfully`);
   } catch (error) {
     console.error('❌ Install route error:', error);
     res.status(500).json({ error: 'Install failed', details: error.message });
