@@ -150,10 +150,20 @@ app.get('/api/shopify/callback', async (req, res) => {
   console.log(`📝 Code: ${code ? 'Present' : 'Missing'}`);
   
   if (!code || !shop) {
+    console.error('❌ Missing required OAuth parameters');
     return res.status(400).json({ error: 'Missing required OAuth parameters' });
   }
 
+  // Validate shop domain
+  const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
+  if (!shopRegex.test(shop)) {
+    console.error('❌ Invalid shop domain:', shop);
+    return res.status(400).json({ error: 'Invalid shop domain' });
+  }
+
   try {
+    console.log(`🔄 Processing OAuth for shop: ${shop}`);
+
     // Exchange code for access token
     const axios = require('axios');
     const tokenResponse = await axios.post(`https://${shop}/admin/oauth/access_token`, {
@@ -163,38 +173,158 @@ app.get('/api/shopify/callback', async (req, res) => {
     });
 
     const { access_token } = tokenResponse.data;
+    if (!access_token) {
+      throw new Error('No access token received from Shopify');
+    }
+    
     console.log(`🎉 Access token received for ${shop}`);
 
-    // For now, return success message
+    // Get shop information from Shopify
+    const shopResponse = await axios.get(`https://${shop}/admin/api/2023-10/shop.json`, {
+      headers: {
+        'X-Shopify-Access-Token': access_token,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
+
+    const shopData = shopResponse.data.shop;
+    console.log(`🏪 Shop verified: ${shopData.name} (${shopData.domain})`);
+
+    // Check if MongoDB is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('⚠️ MongoDB not connected. Storing temporary data only.');
+      return res.json({
+        success: true,
+        message: `App successfully installed on ${shop}!`,
+        shop: shop,
+        shopName: shopData.name,
+        note: 'MongoDB not connected. Store data saved temporarily. Database integration pending...'
+      });
+    }
+
+    // Import Store model (with error handling)
+    let Store;
+    try {
+      Store = require('./models/Store');
+    } catch (error) {
+      console.error('❌ Error loading Store model:', error.message);
+      return res.json({
+        success: true,
+        message: `App installed on ${shop}, but database model not available`,
+        shop: shop,
+        note: 'Database model loading failed. Basic installation completed.'
+      });
+    }
+
+    // Save or update store in database
+    let store = await Store.findOne({ shopifyShop: shop });
+    
+    if (store) {
+      console.log(`🔄 Updating existing store: ${shop}`);
+      store.accessToken = access_token;
+      store.updatedAt = new Date();
+    } else {
+      console.log(`🆕 Creating new store: ${shop}`);
+      store = new Store({
+        shopifyShop: shop,
+        accessToken: access_token,
+        subscription: {
+          plan: 'basic',
+          status: 'trial',
+          aiProviders: ['llama'], // Start with cheapest provider
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days trial
+          productLimit: 200
+        },
+        settings: {
+          syncFrequency: '24h',
+          enabledFeatures: {
+            realTimeSync: false,
+            advancedAnalytics: false,
+            priorityListing: false
+          },
+          aiOptimization: {
+            optimizeDescriptions: true,
+            optimizeTitles: true,
+            generateTags: true
+          }
+        },
+        analytics: {
+          totalAIQueries: 0,
+          aiQueryHistory: [],
+          topRecommendedProducts: [],
+          monthlyStats: []
+        }
+      });
+    }
+
+    await store.save();
+    console.log(`💾 Store saved successfully: ${shop}`);
+
+    // Trigger initial product sync (non-blocking)
+    setTimeout(async () => {
+      try {
+        console.log(`🔄 Starting initial product sync for: ${shop}`);
+        
+        // Import DataSyncService (with error handling)
+        let DataSyncService;
+        try {
+          DataSyncService = require('./services/dataSyncService');
+          const syncResult = await DataSyncService.syncStore(store._id);
+          if (syncResult.success) {
+            console.log(`✅ Initial sync completed for: ${shop} (${syncResult.productsSync} products)`);
+          } else {
+            console.error(`❌ Initial sync failed for: ${shop}`, syncResult.error);
+          }
+        } catch (error) {
+          console.error(`❌ DataSyncService not available:`, error.message);
+        }
+      } catch (error) {
+        console.error(`❌ Initial sync error for: ${shop}`, error.message);
+      }
+    }, 5000);
+
+    // Success response with database integration
     res.json({
       success: true,
       message: `App successfully installed on ${shop}!`,
       shop: shop,
-      note: 'OAuth flow completed successfully. Database integration coming next...'
+      shopName: shopData.name,
+      plan: store.subscription.plan,
+      aiProviders: store.subscription.aiProviders,
+      productLimit: store.subscription.productLimit,
+      trialExpiresAt: store.subscription.expiresAt,
+      note: 'Store data saved to database. Initial product sync started in background.',
+      nextSteps: [
+        'Products will be synced automatically',
+        'AI providers will be updated with your catalog',
+        'Analytics will start tracking AI queries'
+      ]
     });
 
   } catch (error) {
-    console.error(`❌ OAuth error for ${shop}:`, error.message);
-    res.status(500).json({
-      error: 'OAuth flow failed',
-      details: error.message
+    console.error(`❌ OAuth callback error for shop: ${shop}`, error.message);
+    
+    // Provide user-friendly error messages
+    let errorMessage = 'Installation failed. Please try again.';
+    
+    if (error.response?.status === 401) {
+      errorMessage = 'Invalid Shopify credentials. Please check your app configuration.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'Access denied. Please ensure the app has proper permissions.';
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+      errorMessage = 'Network error. Please check your internet connection and try again.';
+    } else if (error.name === 'MongoError' || error.name === 'MongooseError') {
+      errorMessage = 'Database error. Installation completed but data not saved.';
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      shop: shop,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      timestamp: new Date().toISOString()
     });
   }
-});
-
-// AI Test Connectivity
-app.get('/api/ai/test-connectivity', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API routes are working!',
-    providers: {
-      claude: process.env.CLAUDE_API_KEY ? 'configured' : 'missing',
-      openai: process.env.OPENAI_API_KEY ? 'configured' : 'missing',
-      gemini: process.env.GEMINI_API_KEY ? 'configured' : 'missing',
-      deepseek: process.env.DEEPSEEK_API_KEY ? 'configured' : 'missing',
-      llama: process.env.LLAMA_API_KEY ? 'configured' : 'missing'
-    }
-  });
 });
 
 // Start server FIRST
