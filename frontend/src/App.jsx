@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider as PolarisProvider } from '@shopify/polaris';
-import { AppBridgeProvider } from './components/AppBridgeProvider';
+import { CustomAppBridgeProvider } from './components/AppBridgeProvider';
 import enTranslations from '@shopify/polaris/locales/en.json';
 import DashboardPage from './pages/DashboardPage';
 import ProductsPage from './pages/ProductsPage';
@@ -20,7 +20,7 @@ function App() {
   return (
     <PolarisProvider i18n={enTranslations}>
       <BrowserRouter>
-        <AppBridgeProvider>
+        <CustomAppBridgeProvider>
           <AppContextProvider>
             <Navigation />
             <Routes>
@@ -30,7 +30,7 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
           </AppContextProvider>
-        </AppBridgeProvider>
+        </CustomAppBridgeProvider>
       </BrowserRouter>
     </PolarisProvider>
   );
