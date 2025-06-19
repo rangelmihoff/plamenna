@@ -1,0 +1,40 @@
+{
+    "navigation": {
+        "dashboard": "Dashboard",
+        "products": "Products",
+        "pricing": "Pricing Plans",
+        "settings": "Settings"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome to AI SEO 2.0!",
+        "loading": "Loading your shop status...",
+        "currentPlan": "Current Plan",
+        "queriesUsed": "AI Queries Used (this month)",
+        "trialEnds": "Your free trial ends on",
+        "noPlan": "No active plan. 7-day trial active."
+    },
+    "pricing": {
+        "title": "Choose Your Plan"
+    },
+    "plans": {
+        "current": "Current Plan",
+        "choose": "Choose Plan",
+        "aiQueries": "AI Queries",
+        "products": "Products",
+        "syncEvery": "Sync every",
+        "hours": "hours",
+        "aiProviders": "AI Providers"
+    },
+    "products": {
+        "title": "Your Products"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Application Language",
+        "dataSync": "Data Synchronization",
+        "syncDescription": "Manually sync your product data with our servers to ensure the AI has the latest information.",
+        "syncNow": "Sync Now"
+    }
+}
+
