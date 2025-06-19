@@ -1,7 +1,7 @@
 // Този компонент е нужен за комуникация с Shopify Admin
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Provider } from '@shopify/app-bridge-react';
+import { AppBridgeProvider } from '@shopify/app-bridge-react';
 
 export function AppBridgeProvider({ children }) {
     const location = useLocation();
