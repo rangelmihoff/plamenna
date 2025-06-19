@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Text, Button, VerticalStack, Divider, List } from '@shopify/polaris';
+import { Card, Text, Button, Divider, List } from '@shopify/polaris';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +23,7 @@ function PlanCard({ plan, isCurrentPlan }) {
 
     return (
         <Card>
-            <VerticalStack gap="4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <Text variant="headingXl" as="h2">{plan.name}</Text>
                 <Text variant="heading2xl" as="p">${plan.price}<Text as="span" color="subdued">/mo</Text></Text>
 
@@ -44,7 +44,7 @@ function PlanCard({ plan, isCurrentPlan }) {
                     <List.Item>{t('plans.syncEvery')} {plan.sync_interval_hours} {t('plans.hours')}</List.Item>
                     <List.Item>{plan.ai_providers_count} {t('plans.aiProviders')}</List.Item>
                 </List>
-            </VerticalStack>
+            </div>
         </Card>
     );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Layout, Card, Text, VerticalStack } from '@shopify/polaris';
+import { Page, Layout, Card, Text } from '@shopify/polaris';
 import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
 
@@ -17,18 +17,18 @@ function DashboardPage() {
             <Layout>
                 <Layout.Section>
                     <Card>
-                        <VerticalStack gap="4">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <Text variant="headingLg" as="h2">{t('dashboard.welcome')}</Text>
                             {loading ? <Text as="p">{t('dashboard.loading')}</Text> : (
-                                <VerticalStack gap="2">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     <Text as="p">{t('dashboard.currentPlan')}: <strong>{planName}</strong></Text>
                                     <Text as="p">{t('dashboard.queriesUsed')}: {queriesUsed} / {queriesLimit}</Text>
-                                     {shopStatus?.plan ? null : (
+                                    {shopStatus?.plan ? null : (
                                         <Text as="p">{t('dashboard.trialEnds')}: <strong>{trialEnds}</strong></Text>
-                                     )}
-                                </VerticalStack>
+                                    )}
+                                </div>
                             )}
-                        </VerticalStack>
+                        </div>
                     </Card>
                 </Layout.Section>
             </Layout>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Layout, Card, Text, Button, VerticalStack } from '@shopify/polaris';
+import { Page, Layout, Card, Text, Button } from '@shopify/polaris';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -16,14 +16,14 @@ function SettingsPage() {
             <Layout>
                 <Layout.Section>
                     <Card>
-                        <VerticalStack gap="5">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                             <Text variant="headingMd" as="h2">{t('settings.language')}</Text>
                             <LanguageSwitcher />
                             
                             <Text variant="headingMd" as="h2">{t('settings.dataSync')}</Text>
                             <Text as="p" color="subdued">{t('settings.syncDescription')}</Text>
                             <Button onClick={handleSync}>{t('settings.syncNow')}</Button>
-                        </VerticalStack>
+                        </div>
                     </Card>
                 </Layout.Section>
             </Layout>

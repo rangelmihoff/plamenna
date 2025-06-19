@@ -1,10 +1,10 @@
 import React from 'react';
 import { Navigation as PolarisNavigation, Frame } from '@shopify/polaris';
 import {
-    HomeMinor,
-    ProductsMinor,
-    AnalyticsMinor,
-    SettingsMinor
+    HomeIcon,
+    ProductIcon,
+    ChartLineIcon,
+    SettingsIcon
 } from '@shopify/polaris-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -23,25 +23,25 @@ function Navigation() {
                     {
                         url: '/',
                         label: t('navigation.dashboard'),
-                        icon: HomeMinor,
+                        icon: HomeIcon,
                         onClick: () => navigate('/'),
                     },
                     {
                         url: '/products',
                         label: t('navigation.products'),
-                        icon: ProductsMinor,
+                        icon: ProductIcon,
                         onClick: () => navigate('/products'),
                     },
                     {
                         url: '/pricing',
                         label: t('navigation.pricing'),
-                        icon: AnalyticsMinor,
+                        icon: ChartLineIcon,
                         onClick: () => navigate('/pricing'),
                     },
                     {
                         url: '/settings',
                         label: t('navigation.settings'),
-                        icon: SettingsMinor,
+                        icon: SettingsIcon,
                         onClick: () => navigate('/settings'),
                     },
                 ]}
