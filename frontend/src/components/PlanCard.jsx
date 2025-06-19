@@ -5,7 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
 
 
-function PlanCard({ plan, isCurrentPlan }) 
+function PlanCard({ plan, isCurrentPlan }) {
     const { refetchStatus } = useAppContext();
     const { t } = useTranslation();
 
@@ -26,18 +26,18 @@ function PlanCard({ plan, isCurrentPlan })
             <VerticalStack gap="4">
                 <Text variant="headingXl" as="h2">{plan.name}</Text>
                 <Text variant="heading2xl" as="p">${plan.price}<Text as="span" color="subdued">/mo</Text></Text>
-                
-                <Button 
-                    primary={!isCurrentPlan} 
-                    disabled={isCurrentPlan} 
+
+                <Button
+                    primary={!isCurrentPlan}
+                    disabled={isCurrentPlan}
                     onClick={handleSelectPlan}
                     fullWidth
                 >
                     {isCurrentPlan ? t('plans.current') : t('plans.choose')}
                 </Button>
-                
+
                 <Divider />
-                
+
                 <List type="bullet">
                     <List.Item>{plan.ai_queries} {t('plans.aiQueries')}</List.Item>
                     <List.Item>{plan.product_limit} {t('plans.products')}</List.Item>
