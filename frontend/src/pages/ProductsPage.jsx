@@ -29,7 +29,7 @@ function ProductsPage() {
                     items={products}
                     loading={loading}
                     renderItem={(item) => {
-                        const { id, title, handle, image } = item;
+                        const { id, title, image } = item;
                         const media = <Avatar customer size="md" name={title} source={image?.src} />;
 
                         return (
