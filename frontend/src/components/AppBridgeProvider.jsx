@@ -35,4 +35,3 @@ export function AppBridgeProvider({ children }) {
         </Provider>
     );
 }
-
