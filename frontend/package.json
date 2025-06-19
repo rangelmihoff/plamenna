@@ -43,5 +43,6 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.2",
     "vite": "^6.3.5"
-  }
+  },
+  "scopes": (process.env.SCOPES || '').split(',')
 }
