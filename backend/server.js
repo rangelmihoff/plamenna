@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const { shopifyApi, LATEST_API_VERSION, MemorySessionStorage } = require('@shopify/shopify-api');
+const { shopifyApi, LATEST_API_VERSION, session } = require('@shopify/shopify-api');
 require('@shopify/shopify-api/adapters/node');
 
 // Импортиране на маршрути
@@ -24,7 +24,7 @@ const shopify = shopifyApi({
     apiVersion: LATEST_API_VERSION,
     isEmbeddedApp: true,
     // Настройки за съхранение на сесии (в бъдеще може да се замени с Redis или база данни)
-    sessionStorage: new MemorySessionStorage(),
+    sessionStorage: new session.MemorySessionStorage(),
 });
 
 global.shopify = shopify;
