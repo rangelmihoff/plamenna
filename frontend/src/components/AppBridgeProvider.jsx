@@ -19,7 +19,7 @@ export function CustomAppBridgeProvider({ children }) {
 
     // Конфигурацията на App Bridge
     const config = {
-        apiKey: process.env.REACT_APP_SHOPIFY_API_KEY || '2bc2b96aa1515eeda30ed377c41375d8', // Резервен ключ
+        apiKey: import.meta.env.VITE_SHOPIFY_API_KEY || '2bc2b96aa1515eeda30ed377c41375d8', // Резервен ключ
         host: new URLSearchParams(location.search).get('host'),
         forceRedirect: true,
     };

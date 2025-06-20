@@ -18,17 +18,17 @@ const PORT = process.env.PORT || 8081;
 // In-memory session storage (plain object)
 const sessionStore = {};
 const sessionStorage = {
-  async storeSession(session) {
-    sessionStore[session.id] = session;
-    return true;
-  },
-  async loadSession(id) {
-    return sessionStore[id] || undefined;
-  },
-  async deleteSession(id) {
-    delete sessionStore[id];
-    return true;
-  }
+    async storeSession(session) {
+        sessionStore[session.id] = session;
+        return true;
+    },
+    async loadSession(id) {
+        return sessionStore[id] || undefined;
+    },
+    async deleteSession(id) {
+        delete sessionStore[id];
+        return true;
+    }
 };
 
 // Настройка на Shopify API
@@ -67,13 +67,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes); // Всички останали API ендпойнти
 
 // Сервиране на фронтенд приложението
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-    app.get('*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
-    });
-}
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
+});
 
 // Стартиране на сървъра
 app.listen(PORT, () => {

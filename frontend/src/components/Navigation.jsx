@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigation as PolarisNavigation, Frame } from '@shopify/polaris';
+import { Frame, TopBar, Navigation as PolarisNavigation } from '@shopify/polaris';
 import {
     HomeIcon,
     ProductIcon,
     ChartLineIcon,
+    CreditCardIcon,
     SettingsIcon
 } from '@shopify/polaris-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -11,58 +12,58 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 
 
-function Navigation() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const { t } = useTranslation();
-
+function AppNavigation({ children }) {
     const navigationMarkup = (
-        <PolarisNavigation location={location.pathname}>
-            <PolarisNavigation.Section
-                items={[
-                    {
-                        url: '/',
-                        label: t('navigation.dashboard'),
-                        icon: HomeIcon,
-                        onClick: () => navigate('/'),
-                    },
-                    {
-                        url: '/products',
-                        label: t('navigation.products'),
-                        icon: ProductIcon,
-                        onClick: () => navigate('/products'),
-                    },
-                    {
-                        url: '/pricing',
-                        label: t('navigation.pricing'),
-                        icon: ChartLineIcon,
-                        onClick: () => navigate('/pricing'),
-                    },
-                    {
-                        url: '/settings',
-                        label: t('navigation.settings'),
-                        icon: SettingsIcon,
-                        onClick: () => navigate('/settings'),
-                    },
-                ]}
-            />
-        </PolarisNavigation>
-    );
-    
-    const topBarMarkup = (
-        <Frame.TopBar
-            showMobileNavigation={true}
-            secondaryMenu={<LanguageSwitcher />}
-        />
-    );
-
-
-    return (
-        <Frame topBar={topBarMarkup} navigation={navigationMarkup}>
-            <div/>
-        </Frame>
-    );
+    <PolarisNavigation location={window.location.pathname}>
+      <PolarisNavigation.Section
+        items={[
+          {
+            url: '/',
+            label: 'Dashboard',
+            icon: HomeIcon,
+            selected: window.location.pathname === '/'
+          },
+          {
+            url: '/products',
+            label: 'Products',
+            icon: ProductIcon,
+            selected: window.location.pathname === '/products'
+          },
+          {
+            url: '/seo-generator',
+            label: 'SEO Generator',
+            icon: ChartLineIcon,
+            selected: window.location.pathname === '/seo-generator'
+          },
+          {
+            url: '/subscription',
+            label: 'Subscription',
+            icon: CreditCardIcon,
+            selected: window.location.pathname === '/subscription'
+          },
+          {
+            url: '/settings',
+            label: 'Settings',
+            icon: SettingsIcon,
+            selected: window.location.pathname === '/settings'
+          }
+        ]}
+      />
+    </PolarisNavigation>
+  );
+  const topBarMarkup = (
+    <TopBar showNavigationToggle />
+  );
+  return (
+    <Frame
+      topBar={topBarMarkup}
+      navigation={navigationMarkup}
+      showMobileNavigation={false}
+    >
+      {children}
+    </Frame>
+  );
 }
 
-export default Navigation;
+export default AppNavigation;
 

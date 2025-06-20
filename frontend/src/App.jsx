@@ -7,7 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProductsPage from './pages/ProductsPage';
 import PricingPage from './pages/PricingPage';
 import SettingsPage from './pages/SettingsPage';
-import Navigation from './components/Navigation';
+import AppNavigation from './components/Navigation';
 import { AppContextProvider } from './context/AppContext';
 
 import './App.css';
@@ -22,13 +22,14 @@ function App() {
       <BrowserRouter>
         <CustomAppBridgeProvider>
           <AppContextProvider>
-            <Navigation />
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Routes>
+            <AppNavigation>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </AppNavigation>
           </AppContextProvider>
         </CustomAppBridgeProvider>
       </BrowserRouter>

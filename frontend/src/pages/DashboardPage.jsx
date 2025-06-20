@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
 
 function DashboardPage() {
+    console.log('DashboardPage се рендерира!');
     const { shopStatus, loading } = useAppContext();
     const { t } = useTranslation();
 
@@ -14,9 +15,8 @@ function DashboardPage() {
 
     return (
         <Page title={t('dashboard.title')}>
-            <div style={{background: '#e0ffe0', padding: 24, marginBottom: 24, borderRadius: 8, textAlign: 'center'}}>
-                <h1 style={{fontSize: 32, color: '#008060', margin: 0}}>Shopify AI SEO App работи!</h1>
-                <p style={{fontSize: 18, color: '#333'}}>Това е тестов надпис за проверка на frontend-а.</p>
+            <div style={{background: '#ffe0e0', padding: 16, marginBottom: 16, borderRadius: 8, textAlign: 'center'}}>
+                <h2 style={{color: '#b00'}}>Тест: DashboardPage компонентът се рендерира!</h2>
             </div>
             <Layout>
                 <Layout.Section>
