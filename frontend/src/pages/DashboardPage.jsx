@@ -14,6 +14,10 @@ function DashboardPage() {
 
     return (
         <Page title={t('dashboard.title')}>
+            <div style={{background: '#e0ffe0', padding: 24, marginBottom: 24, borderRadius: 8, textAlign: 'center'}}>
+                <h1 style={{fontSize: 32, color: '#008060', margin: 0}}>Shopify AI SEO App работи!</h1>
+                <p style={{fontSize: 18, color: '#333'}}>Това е тестов надпис за проверка на frontend-а.</p>
+            </div>
             <Layout>
                 <Layout.Section>
                     <Card>
