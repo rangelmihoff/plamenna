@@ -18,7 +18,7 @@ import '@shopify/polaris/build/esm/styles.css';
 
 // I18n
 import './i18n';
-
+console.log(import.meta.env);
 const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY;
 let host = new URLSearchParams(window.location.search).get('host');
 
@@ -26,7 +26,7 @@ if (!host) {
   console.warn('[Shopify App] host липсва в URL! Ако сте в dev среда, app bridge няма да работи embed-нато.');
   // За локално тестване може да сложиш фалшив host:
   if (import.meta.env.DEV) {
-    host = 'FAKE_HOST_FOR_DEV';
+    host = 'https://shopify-ai-seo-20-production.up.railway.app/';
   }
 }
 

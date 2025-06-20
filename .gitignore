@@ -5,6 +5,8 @@
 # Environment variables
 .env
 .env*.local
+/frontend/.env
+/frontend/.env.local
 # Production
 /build
 # Logs
