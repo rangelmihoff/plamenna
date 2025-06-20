@@ -50,18 +50,17 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Свързване с MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => {
-    console.log('Successfully connected to MongoDB Atlas.');
-    // Попълване на плановете в базата данни при първоначално стартиране
-    const Plan = require('./models/plan.model');
-    Plan.seedPlans();
-}).catch(err => {
-    console.error('Connection error', err);
-    process.exit();
-});
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        console.log('Successfully connected to MongoDB Atlas.');
+        // Попълване на плановете в базата данни при първоначално стартиране
+        const Plan = require('./models/plan.model');
+        Plan.seedPlans();
+    })
+    .catch(err => {
+        console.error('Connection error', err);
+        process.exit();
+    });
 
 // Насочване на API маршрутите
 app.use('/api/auth', authRoutes);

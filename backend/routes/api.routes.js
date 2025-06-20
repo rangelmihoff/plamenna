@@ -3,6 +3,7 @@ const router = express.Router();
 const productController = require('../controllers/product.controller');
 const planController = require('../controllers/plan.controller');
 const authMiddleware = require('../middleware/auth.middleware');
+const authController = require('../controllers/auth.controller');
 
 // Всички маршрути тук са защитени и изискват валиден JWT
 router.use(authMiddleware.verifyToken);
@@ -18,6 +19,9 @@ router.post('/optimize-product', productController.optimizeProduct);
 
 // Маршрут за синхронизация
 router.post('/sync-products', productController.syncProducts);
+
+// Shopify install route (GET /api/shopify/install)
+router.get('/shopify/install', authController.install);
 
 // ... други бъдещи маршрути ...
 
