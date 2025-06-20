@@ -42,6 +42,12 @@ function AppNavigation({ children }) {
             selected: window.location.pathname === '/subscription'
           },
           {
+            url: '/analytics',
+            label: 'Analytics',
+            icon: ChartLineIcon,
+            selected: window.location.pathname === '/analytics'
+          },
+          {
             url: '/settings',
             label: 'Settings',
             icon: SettingsIcon,

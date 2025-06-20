@@ -8,6 +8,9 @@ import ProductsList from './components/ProductsList';
 import PricingPage from './pages/PricingPage';
 import SettingsPage from './pages/SettingsPage';
 import AppNavigation from './components/Navigation';
+import SEOGenerator from './components/SEOGenerator';
+import Analytics from './components/Analytics';
+import Subscription from './components/Subscription';
 import { AppContextProvider } from './context/AppContext';
 
 import './App.css';
@@ -32,6 +35,9 @@ function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/products" element={<ProductsList />} />
                   <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/seo-generator" element={<SEOGenerator />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/subscription" element={<Subscription />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </div>
