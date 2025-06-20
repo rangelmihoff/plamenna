@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const { shopifyApi, LATEST_API_VERSION, MemorySessionStorage } = require('@shopify/shopify-api');
+const { shopifyApi, LATEST_API_VERSION, MemorySessionStorage, CustomSessionStorage } = require('@shopify/shopify-api');
 require('@shopify/shopify-api/adapters/node');
 
 // Импортиране на маршрути
@@ -15,6 +15,24 @@ const apiRoutes = require('./routes/api.routes');
 const app = express();
 const PORT = process.env.PORT || 8081;
 
+console.log('MemorySessionStorage:', MemorySessionStorage);
+
+// In-memory session storage (работи с всяка версия)
+const sessionStore = {};
+const sessionStorage = new (CustomSessionStorage || MemorySessionStorage)(
+  async (id) => {
+    return sessionStore[id] || undefined;
+  },
+  async (session) => {
+    sessionStore[session.id] = session;
+    return true;
+  },
+  async (id) => {
+    delete sessionStore[id];
+    return true;
+  }
+);
+
 // Настройка на Shopify API
 const shopify = shopifyApi({
     apiKey: process.env.SHOPIFY_API_KEY,
@@ -23,8 +41,7 @@ const shopify = shopifyApi({
     hostName: (process.env.SHOPIFY_APP_URL || '').replace(/https?:\/\//, ''),
     apiVersion: LATEST_API_VERSION,
     isEmbeddedApp: true,
-    // Настройки за съхранение на сесии (в бъдеще може да се замени с Redis или база данни)
-    sessionStorage: new MemorySessionStorage(),
+    sessionStorage,
 });
 
 global.shopify = shopify;
