@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider as PolarisProvider } from '@shopify/polaris';
 import { CustomAppBridgeProvider } from './components/AppBridgeProvider';
 import enTranslations from '@shopify/polaris/locales/en.json';
-import DashboardPage from './pages/DashboardPage';
-import ProductsPage from './pages/ProductsPage';
+import Dashboard from './components/Dashboard';
+import ProductsList from './components/ProductsList';
 import PricingPage from './pages/PricingPage';
 import SettingsPage from './pages/SettingsPage';
 import AppNavigation from './components/Navigation';
@@ -23,12 +23,18 @@ function App() {
         <CustomAppBridgeProvider>
           <AppContextProvider>
             <AppNavigation>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Routes>
+              <div style={{
+                minHeight: '100vh',
+                backgroundColor: '#f6f6f7',
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/products" element={<ProductsList />} />
+                  <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Routes>
+              </div>
             </AppNavigation>
           </AppContextProvider>
         </CustomAppBridgeProvider>
