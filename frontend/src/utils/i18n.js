@@ -6,8 +6,6 @@ import frTranslations from '../locales/fr.json';
 import esTranslations from '../locales/es.json';
 import deTranslations from '../locales/de.json';
 
-const I18nContext = createContext();
-
 // All translations combined
 const translations = {
   en: enTranslations,
@@ -185,9 +183,9 @@ export const I18nProvider = ({ children }) => {
   };
 
   return (
-    <I18nContext.Provider value={value}>
+    <I18nProvider value={value}>
       {children}
-    </I18nContext.Provider>
+    </I18nProvider>
   );
 };
 

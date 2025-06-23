@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { api } from '../utils/api';
-import { useSubscriptionContext } from './SubscriptionProvider';
 
 export const SubscriptionProvider = ({ children }) => {
   const [subscription, setSubscription] = useState(null);
