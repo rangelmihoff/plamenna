@@ -4,18 +4,20 @@ const jwt = require('jsonwebtoken');
 // Контролер за инсталиране на приложението
 exports.install = async (req, res) => {
     try {
-        const authRoute = await shopify.auth.begin({
+        await shopify.auth.begin({
             shop: req.query.shop,
             callbackPath: '/api/auth/callback',
             isOnline: false, // Използваме offline достъп за дълготраен токен
             rawRequest: req,
             rawResponse: res
         });
-        console.log(`Redirecting to: ${authRoute}`);
-        return res.redirect(authRoute);
+        // Просто return, защото SDK вече е изпратил redirect
+        return;
     } catch (error) {
         console.error("Error during installation:", error);
-        return res.status(500).send(error.message);
+        if (!res.headersSent) {
+            return res.status(500).send(error.message);
+        }
     }
 };
 
