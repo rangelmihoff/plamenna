@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Page,
   Layout,
@@ -23,7 +23,6 @@ import {
   CalendarTimeMinor
 } from '@shopify/polaris-icons';
 import { useAPI } from '../hooks/useAPI';
-import { useAuth } from '../hooks/useAuth';
 import { useSubscription } from '../hooks/useSubscription';
 import { useTranslation } from '../utils/i18n';
 import LoadingSpinner from './LoadingSpinner';
@@ -40,11 +39,7 @@ const Dashboard = () => {
   const [toast, setToast] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       const [productsRes, seoRes, activityRes] = await Promise.all([
         apiCall('/api/products/analytics'),
@@ -61,7 +56,11 @@ const Dashboard = () => {
         error: true
       });
     }
-  };
+  }, [apiCall, t]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
