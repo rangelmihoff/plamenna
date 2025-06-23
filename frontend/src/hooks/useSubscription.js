@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../utils/api';
+
+const SubscriptionContext = createContext();
 
 export const SubscriptionProvider = ({ children }) => {
   const [subscription, setSubscription] = useState(null);
@@ -96,6 +98,8 @@ export const SubscriptionProvider = ({ children }) => {
     </SubscriptionContext.Provider>
   );
 };
+
+export const useSubscriptionContext = () => useContext(SubscriptionContext);
 
 export const useSubscription = () => {
   return useSubscriptionContext();
