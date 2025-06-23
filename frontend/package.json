@@ -17,7 +17,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "deploy": "npm run build && railway deploy",
-    "setup": "npm install && cd frontend && npm install",
+    "setup": "npm install && npm run build",
     "clean": "rm -rf node_modules frontend/node_modules frontend/build public/*",
     "docker:build": "docker build -t shopify-ai-seo-20 .",
     "docker:run": "docker run -p 3000:3000 shopify-ai-seo-20",
