@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spinner, Stack, Text } from '@shopify/polaris';
+// import { Stack } from '@shopify/polaris'; // Премахнато, ако не се използва
 
 const LoadingSpinner = ({ message, size = 'large' }) => (
   <div style={{ 
@@ -9,7 +9,7 @@ const LoadingSpinner = ({ message, size = 'large' }) => (
     minHeight: '200px',
     flexDirection: 'column'
   }}>
-    <Spinner accessibilityLabel="Loading" size={size} />
+    <div className="Polaris-Spinner Polaris-Spinner--sizeLarge" />
     {message && (
       <div style={{ marginTop: '16px' }}>
         <Text variant="bodyMd" color="subdued">{message}</Text>

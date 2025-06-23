@@ -11,10 +11,8 @@ import {
   ButtonGroup,
   Stack,
   Banner,
-  Spinner,
   EmptyState,
-  Icon,
-  Tooltip
+  Icon
 } from '@shopify/polaris';
 import {
   AnalyticsMinor,
@@ -33,7 +31,6 @@ import Toast from './Toast';
 
 const Dashboard = () => {
   const { apiCall, loading } = useAPI();
-  const { user } = useAuth();
   const { subscription, usage } = useSubscription();
   const { t } = useTranslation();
   
@@ -45,7 +42,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
   const loadDashboardData = async () => {
     try {

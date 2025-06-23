@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, createContext } from 'react';
+import { useState, useEffect } from 'react';
 
 // Import translation files
 import enTranslations from '../locales/en.json';

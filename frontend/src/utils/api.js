@@ -10,7 +10,7 @@ class APIClient {
   }
 
   async request(endpoint, method = 'GET', data = null, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+    let url = `${this.baseURL}${endpoint}`;
     
     const config = {
       method,
