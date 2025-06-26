@@ -1,0 +1,54 @@
+Ключови характеристики:
+	1	Композитен изглед:
+	◦	Комбинира множество компоненти в една страница
+	◦	Разделяне на основно и второстепенно съдържание
+	◦	Full-width секция за бързи действия
+	2	Данни и състояния:
+	◦	Използва useShop hook за магазин информация
+	◦	Взима продукти чрез useProducts hook
+	◦	Интегрира AI функционалности с useAI hook
+	3	Грешки и зареждане:
+	◦	Централизирано управление на грешки
+	◦	Комбинирани loading състояния
+	◦	Показване на грешки в общ Banner компонент
+	4	Компоненти:
+	◦	Вгражда AISearch за директни AI заявки
+	◦	Показва скорошна активност с RecentQueries
+	◦	Визуализира план информация с PlanUsage
+	◦	Представя топ продукти с TopProducts
+	5	Навигация:
+	◦	Бързи линкове към ключови секции
+	◦	Ползва Polaris Button с url пропс
+	6	Адаптивен дизайн:
+	◦	Използва Layout.Section с oneHalf пропс
+	◦	Stack компоненти за responsive подреждане
+	◦	Автоматично адаптира се за различни екрани
+Допълнителни подобрения:
+	1	Персонализация: jsx   // Добавете в началото на компонента
+	2	const greeting = () => {
+	3	  const hour = new Date().getHours();
+	4	  if (hour < 12) return 'Good morning';
+	5	  if (hour < 18) return 'Good afternoon';
+	6	  return 'Good evening';
+	7	};
+	8	
+	9	// И ќе го използвате в title
+	10	title={`${greeting()}, ${shop?.name || 'Admin'}`} 
+	11	Статистики: jsx   // Можете да добавите stats card
+	12	<Card title="Store Stats" sectioned>
+	13	  <Stack distribution="fillEvenly">
+	14	    <Stack.Item>
+	15	      <Text variant="headingXl" as="p">{products.length}</Text>
+	16	      <Text as="p">Total Products</Text>
+	17	    </Stack.Item>
+	18	    <Stack.Item>
+	19	      <Text variant="headingXl" as="p">24</Text>
+	20	      <Text as="p">AI Queries Today</Text>
+	21	    </Stack.Item>
+	22	  </Stack>
+	23	</Card> 
+	24	Теми: jsx   // Можете да използвате useTheme от Polaris
+	25	const { theme } = useTheme();
+	26	const isDark = theme === 'dark';
+	27	// И да прилагате conditional styling 
+Този dashboard компонент предоставя цялостен преглед на състоянието на приложението и ключовите му функции, като същевременно служи като отправна точка за навигация към други секции.

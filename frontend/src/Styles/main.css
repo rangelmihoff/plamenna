@@ -1,0 +1,24 @@
+/* Main layout styles */
+.Polaris-Page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Custom card styles */
+.optimization-card {
+  margin-top: 20px;
+}
+
+/* Loading states */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .Polaris-Layout__Section--secondary {
+    margin-top: 20px;
+  }
+}

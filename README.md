@@ -1,19 +1,27 @@
-markdown
 # Shopify AI SEO 2.0
-Connect your Shopify store to 5 AI assistants: Claude, OpenAI, Gemini, DeepSeek, and 
-Llama.
-## Quick Deploy to Railway
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template)
-## Manual Setup
+
+Next-generation SEO optimization app for Shopify stores with AI integration.
+
+## Features
+
+- AI-powered product search optimization
+- Automated metadata generation
+- Multi-provider AI integration (OpenAI, Claude, Gemini, etc.)
+- Real-time analytics dashboard
+- Multi-language support (English, French, Spanish, German)
+
+## Tech Stack
+
+- **Frontend**: React + Shopify Polaris + Vite
+- **Backend**: Node.js + Express + MongoDB
+- **AI Providers**: OpenAI, Anthropic, Google Gemini, DeepSeek, Meta Llama
+
+## Setup
+
 1. Clone the repository
-2. Copy `.env.example` to `.env` and fill in your API keys
-3. Run `npm install`
-4. Run `npm start`
-## Environment Variables
-See `.env.example` for all required variables.
-## API Documentation
-- Health Check: `GET /health`
-- Install: `GET /api/shopify/install?shop=your-store.myshopify.com`
-## Support
-For issues, please check the [documentation](https://github.com/yourusername/shopify-
-ai-seo-app).
+2. Create `.env` file based on `.env.example`
+3. Install dependencies:
+
+```bash
+cd backend && npm install
+cd ../frontend && npm install

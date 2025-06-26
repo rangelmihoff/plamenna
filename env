@@ -1,0 +1,19 @@
+# Shopify App Configuration
+VITE_SHOPIFY_API_KEY=2bc2b96aa1515eeda30ed377c41375d8
+VITE_SHOPIFY_API_SECRET=9c730533526b2ceba06480f2812fb39d
+VITE_HOST=https://shopify-ai-seo-20-production.up.railway.app
+VITE_SCOPES=read_products,write_products,read_script_tags,write_script_tags
+
+# Backend Configuration
+VITE_API_BASE_URL=/api
+VITE_DEFAULT_LANGUAGE=en
+
+# AI Providers
+VITE_OPENAI_API_KEY=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
+VITE_ANTHROPIC_API_KEY=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
+VITE_GOOGLE_API_KEY=AIzaSyBwe57Qoj-3x3fVCFMf7wlMjn99B69PTQw
+VITE_DEEPSEEK_API_KEY=sk-f0a71993aece4f6da1145814f39ab9ee
+VITE_META_API_KEY=d2853cf2b630741ddad4063d009c4f60cba1caccb9d2f1760107f7d1cbc72ff5
+
+# Database
+MONGODB_URI=mongodb://mongo:27017/shopify-ai-seo

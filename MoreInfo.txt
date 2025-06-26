@@ -1,0 +1,34 @@
+Running Locally
+bash
+
+# Start backend
+cd backend && npm run dev
+
+# Start frontend
+cd frontend && npm run dev
+Deployment
+Railway
+https://railway.app/button.svg
+Docker
+bash
+
+docker-compose up --build
+Environment Variables
+See .env.example for required variables
+License
+MIT
+text
+
+Това завършва цялостната конфигурация на проекта. Всички файлове:
+
+1. **.env** - Дефинира всички необходими environment variables
+2. **.gitignore** - Игнорира node_modules, env файлове и build директории
+3. **docker-compose.yml** - Дефинира multi-container приложението
+4. **Dockerfile** - Backend и frontend Docker конфигурации
+5. **README.md** - Документация за проекта
+
+Следвайте тези стъпки за пълно настройване:
+
+1. Създайте `.env` файл въз основа на примерните стойности
+2. Инсталирайте зависимости и за backend, и за frontend
+3. Стартирайте с `docker-compose up` или отделно за development

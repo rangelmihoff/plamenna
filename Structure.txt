@@ -1,0 +1,98 @@
+Структура
+shopify-ai-seo/
+├── backend/
+│   ├── config/
+│   │   ├── aiProviders.js
+│   │   ├── db.js
+│   ├── controllers/
+│   │   ├── analyticsController.js
+│   │   ├── aiController.js
+│   │   ├── authController.js
+│   │   ├── productController.js
+│   │   ├── shopController.js
+│   │   ├── subscriptionController.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   ├── errorHandler.js
+│   │   ├── rateLimiter.js
+│   │   ├── validateRequest.js
+│   │   ├── shopifyWebhook.js
+│   ├── models/
+│   │   ├── AIQuery.js
+│   │   ├── Analytics.js
+│   │   ├── Plan.js
+│   │   ├── Product.js
+│   │   ├── Shop.js
+│   │   ├── Subscription.js
+│   ├── routes/
+│   │   ├── aiRoutes.js
+│   │   ├── analyticsRoutes.js
+│   │   ├── authRoutes.js
+│   │   ├── productRoutes.js
+│   │   ├── shopRoutes.js
+│   │   ├── subscriptionRoutes.js
+│   ├── services/
+│   │   ├── autService.js
+│   │   ├── aiService.js
+│   │   ├── productService.js
+│   │   ├── planService.js
+│   │   ├── shopifyService.js
+│   │   ├── subscriptionService.js
+│   ├── utils/
+│   │   ├── syncScheduler.js
+│   │   ├── logger.js
+│   ├── app.js
+│   ├── server.js
+│   └── package.json
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AISearch.jsx
+│   │   │   ├── AnalyticsDashboard.jsx
+│   │   │   ├── LanguageSwitcher.jsx
+│   │   │   ├── OptimizeModal.jsx
+│   │   │   ├── PlanSelector.jsx
+│   │   │   ├── PlanUsage.jsx
+│   │   │   ├── ProductTable.jsx
+│   │   │   ├── RecentQueries.jsx
+│   │   │   ├── SEOOptimizer.jsx
+│   │   │   ├── TopProducts.jsx
+│   │   │   ├── TopBar.jsx
+│   │   ├── contexts/
+│   │   │   ├── AppBridgeContext.js
+│   │   │   ├── AuthContext.js
+│   │   │   ├── PolarisContext.js
+│   │   │   ├── QueryProvider.js
+│   │   ├── hooks/
+│   │   │   ├── useAI.js
+│   │   │   ├── useShop.jsx
+│   │   │   ├── useAppQuery.js
+│   │   │   ├── useAppMutations.js
+│   │   │   ├── useProducts.js
+│   │   ├── pages/
+│   │   │   ├── AIQueries.jsx
+│   │   │   ├── Analytics.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Products.jsx
+│   │   │   ├── Settings.jsx
+│   │   ├── styles/
+│   │   │   ├── main.css
+│   │   ├── translations/
+│   │   │   ├── en.json
+│   │   │   ├── fr.json
+│   │   │   ├── es.json
+│   │   │   ├── de.json
+│   │   ├── App.jsx
+│   │   ├── i18n.js
+│   │   ├── Routes.js
+│   │   ├── index.jsx
+│   │   └── setup.js
+│   ├── package.json
+│   └── vite.config.js
+├── .env
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile
+└── README.md

@@ -1,0 +1,11 @@
+{
+  "Login": {
+    "installButton": "Installer l'application",
+    "title": "AI SEO 2.0 Connexion"
+  },
+  "Common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  }
+}
