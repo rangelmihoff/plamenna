@@ -18,7 +18,7 @@ FROM node:18.18.0-alpine
 WORKDIR /app
 # Copy backend package files
 COPY backend/package*.json ./
-# Use 'npm ci' for the backend as well
+# Use 'npm ci' for the backend as well. Omit dev dependencies for a smaller final image.
 RUN npm ci --omit=dev
 # Copy backend source code
 COPY backend/ ./
