@@ -1,5 +1,0 @@
-toml
-[build]
-base_image = "node:18-alpine"
-[deploy]
-start_command = "docker-compose up"

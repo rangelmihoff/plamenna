@@ -1,40 +1,20 @@
-const express = require('express');
+// backend/routes/authRoutes.js
+// Defines the routes for the Shopify authentication process.
+
+import express from 'express';
+import { handleShopifyAuth, handleShopifyCallback } from '../controllers/authController.js';
+
 const router = express.Router();
-const { Shopify } = require('@shopify/shopify-api');
-const Shop = require('../models/Shop');
-const SubscriptionService = require('../services/subscriptionService');
 
-// Install route
-router.get('/install', async (req, res) => {
-  const authRoute = await Shopify.Auth.beginAuth(
-    req,
-    res,
-    req.query.shop,
-    '/auth/callback',
-    false
-  );
-  res.redirect(authRoute);
-});
+// @desc    Initiates the Shopify OAuth process.
+// @route   GET /api/auth/shopify
+// @access  Public
+// The frontend redirects the merchant to this URL.
+router.get('/shopify', handleShopifyAuth);
 
-// Callback route
-router.get('/callback', async (req, res) => {
-  try {
-    const session = await Shopify.Auth.validateAuthCallback(
-      req,
-      res,
-      req.query
-    );
+// @desc    Callback URL where Shopify redirects after authentication.
+// @route   GET /api/auth/shopify/callback
+// @access  Public
+router.get('/shopify/callback', handleShopifyCallback);
 
-    // Initialize default subscription (trial)
-    await SubscriptionService.initializePlans();
-    const shop = await Shop.findOne({ shopifyDomain: session.shop });
-    await SubscriptionService.createSubscription(shop._id, 'Starter');
-
-    res.redirect(`/?shop=${session.shop}&host=${req.query.host}`);
-  } catch (err) {
-    console.error('Auth callback error:', err);
-    res.status(500).send('Error during authentication');
-  }
-});
-
-module.exports = router;
+export default router;

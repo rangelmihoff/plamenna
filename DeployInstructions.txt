@@ -1,125 +1,0 @@
-1. Подготовка за Deploy
-Необходими инструменти:
-	•	Railway акаунт
-	•	MongoDB Atlas акаунт
-	•	Shopify Partner акаунт
-	•	Git CLI
-	•	Node.js v18+
-Стъпки:
-bash
-
-# Клониране на репозиторито
-git clone https://github.com/your-repo/shopify-ai-seo.git
-cd shopify-ai-seo
-
-2. Конфигурация на MongoDB Atlas
-	1	Създайте нов кластер в Atlas
-	2	Добавете IP адрес 0.0.0.0/0 за достъп (или конкретни Railway IPs)
-	3	Вземете connection string: text   mongodb+srv://<username>:<password>@cluster.mongodb.net/shopify-ai-seo?retryWrites=true&w=majority 
-	4	Добавете го в .env файла: ini   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/shopify-ai-seo 
-
-3. Деплой на Railway
-Метод 1: Чрез GUI
-	1	Отидете в Railway Dashboard
-	2	Изберете "New Project" → "Deploy from GitHub repo"
-	3	Конфигурирайте environment variables от .env файла
-	4	Задайте следните портове:
-	◦	Backend: 3001
-	◦	Frontend: 3000
-Метод 2: Чрез CLI
-bash
-
-# Инсталирайте Railway CLI
-npm i -g @railway/cli
-
-# Логин
-railway login
-
-# Деплой
-railway up --service=backend
-railway up --service=frontend
-
-4. Конфигурация на Shopify App
-	1	В Shopify Partners Dashboard:
-	◦	Отидете на "Apps" → "Create App"
-	◦	Изберете "Public App"
-	2	Попълнете настройките:
-	◦	App URL: https://your-app.railway.app
-	◦	Allowed redirection URL(s): text   https://your-app.railway.app/auth/callback
-	◦	https://your-app.railway.app/api/auth/callback 
-	3	Вземете API ключове и ги добавете в Railway environment: ini   SHOPIFY_API_KEY=your_api_key
-	4	SHOPIFY_API_SECRET=your_api_secret 
-
-5. Сървизни Настройки
-Backend (Node.js):
-yaml
-
-# В railway.yml
-services:
-  backend:
-    start: "node server.js"
-    build:
-      cache:
-        - "node_modules"
-    env:
-      PORT: 3001
-      NODE_ENV: production
-Frontend (Vite):
-yaml
-
-services:
-  frontend:
-    start: "vite preview --port 3000"
-    build:
-      command: "npm run build"
-      baseDir: "./dist"
-    env:
-      VITE_API_BASE_URL: "/api"
-
-6. SSL и Домейн
-	1	В Railway Dashboard:
-	◦	Отидете на "Settings" → "Domains"
-	◦	Добавете custom domain (напр. app.yourdomain.com)
-	2	Конфигурирайте SSL: bash   railway domains add app.yourdomain.com
-	3	railway ssl enable 
-
-7. Инициализация на Данни
-Изпълнете следната команда чрез Railway CLI за да инициализирате плановете:
-bash
-
-railway run --service=backend "node scripts/init-plans.js"
-
-8. Финален Checklist
-	•	Всички environment variables са зададени
-	•	MongoDB връзката работи
-	•	Shopify app е конфигурирана правилно
-	•	SSL сертификат е активиран
-	•	Health checks връщат 200 OK
-
-9. Команди за Мониторинг
-bash
-
-# Логове на backend
-railway logs --service=backend
-
-# Логове на frontend
-railway logs --service=frontend
-
-# Статус на сървизите
-railway status
-
-10. Резервно копиране
-Конфигурирайте автоматични backup-и в MongoDB Atlas:
-	1	Отидете в "Cluster" → "Backup"
-	2	Задайте ежедневни backup-и
-	3	Активирайте Point-in-Time Recovery
-
-Важни Бележки:
-	1	За production използвайте отделни API ключове за всеки AI доставчик
-	2	Ограничете достъпа до MongoDB само от Railway IPs
-	3	Регулярно ъпдейтвайте зависимостите: bash   npm outdated
-	4	npm update 
-Ако срещнете проблеми при деплоя, проверете:
-	•	Railway статус страница: https://status.railway.app/
-	•	Shopify API статус: https://status.shopify.com/
-Това покрива цялостния процес на деплой - от локална разработка до production среда.

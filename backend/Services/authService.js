@@ -1,61 +1,19 @@
-const Shop = require('../models/Shop');
-const { Shopify } = require('@shopify/shopify-api');
-const logger = require('../utils/logger');
+// backend/services/authService.js
+// This service could contain more complex authentication logic if needed,
+// such as handling different auth strategies or user roles.
+// For this app, the logic is mostly in the controller and Shopify API library.
 
-class AuthService {
-  async handleAuthCallback(req, res) {
-    try {
-      const session = await Shopify.Auth.validateAuthCallback(
-        req,
-        res,
-        req.query
-      );
+import jwt from 'jsonwebtoken';
 
-      // Find or create shop record
-      const shop = await Shop.findOneAndUpdate(
-        { shopifyDomain: session.shop },
-        {
-          accessToken: session.accessToken,
-          isActive: true,
-          $setOnInsert: {
-            trialEndDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5-day trial
-            language: 'en'
-          }
-        },
-        { upsert: true, new: true }
-      );
+/**
+ * @desc    Generate a JWT for a given shop ID
+ * @param   {string} id - The shop's MongoDB document ID
+ * @returns {string} The generated JSON Web Token
+ */
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '30d', // The token will be valid for 30 days
+  });
+};
 
-      logger.info(`Shop ${session.shop} authenticated successfully`);
-      return shop;
-    } catch (err) {
-      logger.error(`Auth callback error: ${err.message}`, { error: err });
-      throw err;
-    }
-  }
-
-  async getAuthUrl(req, res, shop) {
-    try {
-      return await Shopify.Auth.beginAuth(
-        req,
-        res,
-        shop,
-        '/auth/callback',
-        false
-      );
-    } catch (err) {
-      logger.error(`Auth URL generation error: ${err.message}`);
-      throw err;
-    }
-  }
-
-  async validateSession(req, res) {
-    try {
-      return await Shopify.Utils.loadCurrentSession(req, res, true);
-    } catch (err) {
-      logger.error(`Session validation error: ${err.message}`);
-      throw err;
-    }
-  }
-}
-
-module.exports = new AuthService();
+export { generateToken };

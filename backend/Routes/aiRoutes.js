@@ -1,26 +1,21 @@
-const express = require('express');
+// backend/routes/aiRoutes.js
+// Defines API routes for interacting with AI services.
+
+import express from 'express';
+import { generateSeoContent, getRecentQueries } from '../controllers/aiController.js';
+import { protect } from '../middleware/auth.js';
+
 const router = express.Router();
-const AIController = require('../controllers/aiController');
-const { check } = require('express-validator');
-const authMiddleware = require('../middleware/auth');
 
-// Protect all routes
-router.use(authMiddleware);
+// All AI-related routes are protected.
+router.use(protect);
 
-// Process AI query
-router.post(
-  '/query',
-  [
-    check('query', 'Query is required').not().isEmpty(),
-    check('provider', 'Provider is required').not().isEmpty(),
-  ],
-  AIController.processQuery
-);
+// @desc    Generate SEO content for a product
+// @route   POST /api/ai/generate-seo
+router.route('/generate-seo').post(generateSeoContent);
 
-// Get query history
-router.get('/history', AIController.getQueryHistory);
+// @desc    Get recent AI queries for the dashboard
+// @route   GET /api/ai/queries
+router.route('/queries').get(getRecentQueries);
 
-// Get usage stats
-router.get('/usage', AIController.getUsageStats);
-
-module.exports = router;
+export default router;

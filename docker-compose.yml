@@ -1,39 +1,48 @@
+# docker-compose.yml for local development
+# This file helps run the app and a MongoDB instance locally.
+# It is NOT used by Railway for deployment.
+
 version: '3.8'
-
 services:
+  # The application service (backend + frontend)
   app:
-    build: .
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongo:27017/shopify-ai-seo
-    depends_on:
-      - mongo
-    restart: unless-stopped
-
-  mongo:
-    image: mongo:6.0
-    volumes:
-      - mongodb_data:/data/db
-    ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=example
-    restart: unless-stopped
-
-  frontend:
+    container_name: shopify-ai-seo-app
     build:
-      context: ./frontend
+      context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "8081:8081"
+    # Load environment variables from the .env file in the root directory
+    env_file:
+      - .env
+    # Override some variables for local development
     environment:
-      - VITE_API_BASE_URL=http://localhost:3001
+      - NODE_ENV=development
+      - HOST=http://localhost:8081
+      - MONGO_URI=mongodb://mongo:27017/ai-seo-app
     depends_on:
-      - app
-    restart: unless-stopped
+      - mongo
+    volumes:
+      # Mount source code for live-reloading with nodemon
+      # Note: This requires nodemon to be run inside the container
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      # Anonymous volume to prevent local node_modules from overwriting container's
+      - /app/backend/node_modules
+      - /app/frontend/node_modules
+    # Use nodemon for development to auto-restart on file changes
+    command: npm run dev --prefix backend
+
+  # The MongoDB database service
+  mongo:
+    container_name: shopify-ai-seo-db
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
 
 volumes:
+  # Persistent volume for MongoDB data
   mongodb_data:

@@ -1,87 +1,52 @@
-const AIQuery = require('../models/AIQuery');
-const AIService = require('../services/aiService');
-const Subscription = require('../models/Subscription');
-const { validationResult } = require('express-validator');
+// backend/controllers/aiController.js
+// This controller is the gateway for all AI-related functionalities.
 
-class AIController {
-  async processQuery(req, res, next) {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
+import asyncHandler from 'express-async-handler';
+import { generateSeoForProduct, checkQueryLimitAndPlan, incrementQueryCount } from '../services/aiService.js';
+import AIQuery from '../models/AIQuery.js';
 
-      const { shop } = req;
-      const { query, provider } = req.body;
+/**
+ * @desc    Generate SEO content for a specific product
+ * @route   POST /api/ai/generate-seo
+ * @access  Private
+ */
+const generateSeoContent = asyncHandler(async (req, res) => {
+    const { productId, provider, contentType, customInstruction } = req.body;
+    const shopId = req.shop._id;
 
-      const result = await AIService.processQuery(shop._id, query, provider);
-
-      res.json({
-        success: true,
-        data: result,
-      });
-    } catch (err) {
-      next(err);
+    // Validate request body
+    if (!productId || !provider || !contentType) {
+        res.status(400);
+        throw new Error('Product ID, AI provider, and content type are required.');
     }
-  }
 
-  async getQueryHistory(req, res, next) {
-    try {
-      const { shop } = req;
-      const { page = 1, limit = 10 } = req.query;
+    // Check if the shop's plan allows this feature and has queries left
+    await checkQueryLimitAndPlan(shopId, provider);
+    
+    // Call the AI service to generate content
+    const result = await generateSeoForProduct(shopId, productId, provider, contentType, customInstruction);
 
-      const queries = await AIQuery.find({ shop: shop._id })
+    // If generation was successful, increment the query count
+    if (result.success) {
+        await incrementQueryCount(shopId);
+    }
+
+    res.status(200).json(result);
+});
+
+/**
+ * @desc    Get recent AI queries for the current shop for the dashboard
+ * @route   GET /api/ai/queries
+ * @access  Private
+ */
+const getRecentQueries = asyncHandler(async (req, res) => {
+    const shopId = req.shop._id;
+    const queries = await AIQuery.find({ shop: shopId })
         .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit));
+        .limit(10)
+        .populate('product', 'title imageUrl'); // Populate product title and image for context in the UI
 
-      const count = await AIQuery.countDocuments({ shop: shop._id });
+    res.status(200).json(queries);
+});
 
-      res.json({
-        success: true,
-        data: queries,
-        pagination: {
-          total: count,
-          page: parseInt(page),
-          pages: Math.ceil(count / limit),
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  async getUsageStats(req, res, next) {
-    try {
-      const { shop } = req;
-      const subscription = await Subscription.findOne({ shop: shop._id }).populate('plan');
-
-      if (!subscription) {
-        return res.status(404).json({
-          success: false,
-          message: 'Subscription not found',
-        });
-      }
-
-      const queriesUsed = await AIQuery.countDocuments({
-        shop: shop._id,
-        createdAt: { $gte: subscription.startDate },
-      });
-
-      res.json({
-        success: true,
-        data: {
-          plan: subscription.plan.name,
-          queriesUsed,
-          queriesLimit: subscription.plan.aiQueries,
-          queriesRemaining: Math.max(0, subscription.plan.aiQueries - queriesUsed),
-          nextBillingDate: subscription.nextBillingDate,
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-}
-
-module.exports = new AIController();
+export { generateSeoContent, getRecentQueries };

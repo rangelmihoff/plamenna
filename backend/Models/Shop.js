@@ -1,51 +1,58 @@
-const mongoose = require('mongoose');
+// backend/models/Shop.js
+// Defines the Mongoose schema for a Shop. Each document represents a Shopify store
+// that has installed the application.
+
+import mongoose from 'mongoose';
 
 const shopSchema = new mongoose.Schema({
+  // The unique domain of the Shopify store (e.g., 'my-awesome-store.myshopify.com').
+  // This is the primary identifier for a shop.
   shopifyDomain: {
     type: String,
-    required: true,
+    required: [true, 'Shopify domain is required.'],
     unique: true,
+    trim: true,
+    index: true,
   },
+  // The offline access token provided by Shopify OAuth.
+  // This is used to make authenticated API calls on behalf of the shop.
   accessToken: {
     type: String,
-    required: true,
+    required: [true, 'Shopify access token is required.'],
   },
-  plan: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan',
+  // The name of the shop.
+  name: {
+    type: String,
   },
-  trialEndDate: {
-    type: Date,
-    default: () => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5-day trial
+  // The email address of the shop owner.
+  email: {
+    type: String,
   },
+  // Flag to indicate if the app is currently installed and active on the shop.
+  // Can be set to false on uninstall webhook.
   isActive: {
     type: Boolean,
     default: true,
   },
+  // A reference to the shop's current subscription document.
+  // This links a shop to its plan and usage data.
+  subscription: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subscription',
+  },
+  // The timestamp of the last successful product synchronization.
   lastSync: {
     type: Date,
   },
-  nextSync: {
-    type: Date,
-  },
-  language: {
+  // The timezone of the shop, useful for scheduling tasks.
+  timezone: {
     type: String,
-    default: 'en',
-    enum: ['en', 'fr', 'es', 'de'],
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  // Automatically add 'createdAt' and 'updatedAt' timestamps.
+  timestamps: true,
 });
 
-shopSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+const Shop = mongoose.model('Shop', shopSchema);
 
-module.exports = mongoose.model('Shop', shopSchema);
+export default Shop;

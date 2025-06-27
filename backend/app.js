@@ -1,51 +1,98 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const { Shopify, ApiVersion } = require('@shopify/shopify-api');
+// backend/app.js
+// This file defines and configures the Express application.
+// It sets up middleware, routes, and error handlers.
 
-// Initialize Shopify API
-Shopify.Context.initialize({
-  API_KEY: process.env.SHOPIFY_API_KEY,
-  API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
-  SCOPES: process.env.SCOPES.split(','),
-  HOST_NAME: process.env.HOST.replace(/https?:\/\//, ''),
-  API_VERSION: ApiVersion.October23,
-  IS_EMBEDDED_APP: true,
-  SESSION_STORAGE: new Shopify.Session.MongoDBSessionStorage(
-    new URL(process.env.MONGODB_URI)
-  ),
-});
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
+// Import local modules
+import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { verifyShopifyWebhook } from './middleware/shopifyWebhook.js';
+
+// Import routes
+import authRoutes from './routes/authRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import shopRoutes from './routes/shopRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+
+// Initialize express app
 const app = express();
 
-// Middleware
-app.use(helmet());
+// --- Core Middleware ---
+
+// Enable CORS
 app.use(cors());
+
+// Set security-related HTTP headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "frame-ancestors": ["'self'", "https://*.myshopify.com", "https://admin.shopify.com"],
+        },
+    },
+}));
+
+
+// Shopify requires the raw body for webhook verification
+// We apply this middleware only to the webhook route.
+app.post('/api/webhooks/shopify', express.raw({ type: 'application/json' }), verifyShopifyWebhook, (req, res) => {
+    // Process webhook here
+    console.log('Webhook verified and processed:', req.body);
+    res.sendStatus(200);
+});
+
+// Body parser for JSON for all other routes
 app.use(express.json());
+
+// Parser for URL-encoded data
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-  })
-);
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Cookie parser
+app.use(cookieParser());
 
-// Routes
-app.use('/api/ai', require('./routes/aiRoutes'));
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/shop', require('./routes/shopRoutes'));
-app.use('/api/subscription', require('./routes/subscriptionRoutes'));
 
-// Error handling middleware
-app.use(require('./middleware/errorHandler'));
+// --- API Routes ---
+// Mount the various API routes under the /api prefix
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/shop', shopRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
-module.exports = app;
+// --- Frontend Serving (for Production) ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Check if running in production
+if (process.env.NODE_ENV === 'production') {
+    // Serve the static files from the React frontend build folder
+    const frontendDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
+    app.use(express.static(frontendDistPath));
+
+    // For any request that doesn't match an API route, send back the React app's index.html file
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(frontendDistPath, 'index.html'));
+    });
+} else {
+    // Development mode message
+    app.get('/', (req, res) => {
+        res.send('API is running in development mode...');
+    });
+}
+
+
+// --- Error Handling Middleware (must be last) ---
+// Custom 404 Not Found handler
+app.use(notFound);
+// Custom global error handler
+app.use(errorHandler);
+
+export default app;

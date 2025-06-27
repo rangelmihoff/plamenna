@@ -1,10 +1,16 @@
-const express = require('express');
+// backend/routes/analyticsRoutes.js
+// Defines API routes for analytics data.
+
+import express from 'express';
+import { getAnalytics } from '../controllers/analyticsController.js';
+import { protect } from '../middleware/auth.js';
+
 const router = express.Router();
-const analyticsController = require('../controllers/analyticsController');
-const authMiddleware = require('../middleware/auth');
 
-router.use(authMiddleware);
+router.use(protect);
 
-router.get('/dashboard', analyticsController.getDashboardStats);
+// @desc    Get aggregated analytics data for a specific time range
+// @route   GET /api/analytics
+router.route('/').get(getAnalytics);
 
-module.exports = router;
+export default router;

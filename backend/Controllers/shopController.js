@@ -1,89 +1,49 @@
-const Shop = require('../models/Shop');
-const SubscriptionService = require('../services/subscriptionService');
-const ShopifyService = require('../services/shopifyService');
+// backend/controllers/shopController.js
+// Handles requests for shop-specific data, like status and dashboard information.
 
-class ShopController {
-  async getShopInfo(req, res, next) {
-    try {
-      const { shop } = req;
-      
-      // Get subscription info
-      const subscription = await SubscriptionService.checkSubscription(shop._id);
-      
-      // Get product count
-      const productCount = await Product.countDocuments({ shop: shop._id });
-      
-      res.json({
-        success: true,
-        data: {
-          shop: {
-            domain: shop.shopifyDomain,
-            plan: subscription.plan.name,
-            trialEndDate: shop.trialEndDate,
-            isActive: shop.isActive,
-            language: shop.language,
-            lastSync: shop.lastSync,
-            nextSync: shop.nextSync,
-          },
-          limits: {
-            products: productCount,
+import asyncHandler from 'express-async-handler';
+import Shop from '../models/Shop.js';
+import Subscription from '../models/Subscription.js';
+import Product from '../models/Product.js';
+import Plan from '../models/Plan.js';
+
+/**
+ * @desc    Get the current status and dashboard data for the logged-in shop
+ * @route   GET /api/shop/status
+ * @access  Private
+ */
+const getShopStatus = asyncHandler(async (req, res) => {
+    const shopId = req.shop._id;
+
+    // Fetch subscription and plan details in one go
+    const subscription = await Subscription.findOne({ shop: shopId }).populate('plan');
+
+    if (!subscription) {
+        res.status(404);
+        throw new Error('Subscription details not found for this shop.');
+    }
+
+    // Get the total count of synced products for this shop
+    const productCount = await Product.countDocuments({ shop: shopId });
+
+    res.status(200).json({
+        shop: {
+            name: req.shop.name,
+            domain: req.shop.shopifyDomain,
+            lastSync: req.shop.lastSync,
+        },
+        plan: {
+            name: subscription.plan.name,
             productLimit: subscription.plan.productLimit,
-            queriesUsed: subscription.queriesUsed,
-            queriesLimit: subscription.plan.aiQueries,
-          }
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
+            queryLimit: subscription.plan.queryLimit,
+        },
+        usage: {
+            aiQueriesUsed: subscription.aiQueriesUsed,
+            productCount: productCount,
+        },
+        subscriptionStatus: subscription.status,
+        trialEndDate: subscription.trialEndDate,
+    });
+});
 
-  async updateShopSettings(req, res, next) {
-    try {
-      const { shop } = req;
-      const { language } = req.body;
-
-      if (language && !['en', 'fr', 'es', 'de'].includes(language)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid language code'
-        });
-      }
-
-      const updates = {};
-      if (language) updates.language = language;
-
-      const updatedShop = await Shop.findByIdAndUpdate(
-        shop._id,
-        updates,
-        { new: true }
-      );
-
-      res.json({
-        success: true,
-        data: updatedShop
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  async getSyncStatus(req, res, next) {
-    try {
-      const { shop } = req;
-      
-      res.json({
-        success: true,
-        data: {
-          lastSync: shop.lastSync,
-          nextSync: shop.nextSync,
-          syncFrequency: shop.plan.syncFrequency
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-}
-
-module.exports = new ShopController();
+export { getShopStatus };

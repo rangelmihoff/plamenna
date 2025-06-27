@@ -1,69 +1,0 @@
-Ключови характеристики:
-	1	Динамично зареждане:
-	◦	Използва React.lazy за code-splitting
-	◦	Suspense fallback за гладко зареждане
-	2	Защитени маршрути:
-	◦	Проверява автентикация преди достъп
-	◦	Пренасочва неавтентикирани потребители
-	3	Интеграция с Shopify:
-	◦	Използва useAuthenticatedFetch за валидация
-	◦	Синхронизира се със shop контекста
-	4	Оптимизации:
-	◦	Ефективна проверка на автентичност
-	◦	Минимизира повторни заявки
-	5	Маршрути:
-	◦	/login - Публичен достъп
-	◦	/ - Основен dashboard
-	◦	/products - Управление на продукти
-	◦	/ai-queries - История от AI заявки
-	◦	/settings - Настройки на акаунта
-Допълнителни подобрения:
-	1	Персонализирани грешки: jsx   const ErrorBoundary = lazy(() => import('./components/ErrorBoundary'));
-	2	
-	3	// В основния компонент
-	4	<ErrorBoundary>
-	5	  <Routes>
-	6	    {/* ... */}
-	7	  </Routes>
-	8	</ErrorBoundary> 
-	9	Роли и разрешения: jsx   const AdminRoute = ({ element, ...props }) => {
-	10	  const { shop } = useShop();
-	11	  return shop?.isAdmin ? element : <Navigate to="/" replace />;
-	12	};
-	13	
-	14	// Използване:
-	15	<Route path="/admin" element={<AdminRoute element={<AdminPanel />} />} /> 
-	16	Аналитика: jsx   useEffect(() => {
-	17	  if (isAuthenticated) {
-	18	    trackPageView(window.location.pathname);
-	19	  }
-	20	}, [location.pathname, isAuthenticated]); 
-	21	Динамични title тагове: jsx   const routeTitles = {
-	22	  '/': 'Dashboard',
-	23	  '/products': 'Products',
-	24	  // ...
-	25	};
-	26	
-	27	useEffect(() => {
-	28	  document.title = `${routeTitles[location.pathname]} | AI SEO 2.0`;
-	29	}, [location.pathname]); 
-Интеграция с главния App компонент:
-jsx
-
-// В App.jsx
-import { BrowserRouter } from 'react-router-dom';
-import AppRoutes from './Routes';
-
-function App() {
-  return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  );
-}
-Този файл дефинира цялата маршрутизация на приложението, като комбинира:
-	•	Защита на маршрути
-	•	Оптимизирано зареждане
-	•	Интеграция с Shopify Auth
-	•	Реактивни зависимости
-	•	Гъвкава архитектура за разширяване

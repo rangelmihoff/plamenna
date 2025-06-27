@@ -1,25 +1,21 @@
-const express = require('express');
+// backend/routes/subscriptionRoutes.js
+// Defines API routes related to managing subscription plans.
+
+import express from 'express';
+import { getAvailablePlans, selectPlan } from '../controllers/subscriptionController.js';
+import { protect } from '../middleware/auth.js';
+
 const router = express.Router();
-const SubscriptionController = require('../controllers/subscriptionController');
-const { check } = require('express-validator');
-const authMiddleware = require('../middleware/auth');
 
-// Protect all routes
-router.use(authMiddleware);
+// All subscription routes are protected.
+router.use(protect);
 
-// Get available plans
-router.get('/plans', SubscriptionController.getPlans);
+// @desc    Get all available subscription plans
+// @route   GET /api/subscriptions/plans
+router.route('/plans').get(getAvailablePlans);
 
-// Get current subscription
-router.get('/current', SubscriptionController.getCurrentSubscription);
+// @desc    Change the current shop's subscription plan
+// @route   POST /api/subscriptions/change-plan
+router.route('/change-plan').post(selectPlan);
 
-// Create new subscription
-router.post(
-  '/',
-  [
-    check('planName', 'Plan name is required').not().isEmpty()
-  ],
-  SubscriptionController.createSubscription
-);
-
-module.exports = router;
+export default router;

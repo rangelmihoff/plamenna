@@ -1,25 +1,16 @@
-const express = require('express');
+// backend/routes/shopRoutes.js
+// Defines API routes for fetching shop-specific information.
+
+import express from 'express';
+import { getShopStatus } from '../controllers/shopController.js';
+import { protect } from '../middleware/auth.js';
+
 const router = express.Router();
-const ShopController = require('../controllers/shopController');
-const { check } = require('express-validator');
-const authMiddleware = require('../middleware/auth');
 
-// Protect all routes
-router.use(authMiddleware);
+router.use(protect);
 
-// Get shop info
-router.get('/', ShopController.getShopInfo);
+// @desc    Get the current status and dashboard data for the logged-in shop
+// @route   GET /api/shop/status
+router.route('/status').get(getShopStatus);
 
-// Update shop settings
-router.put(
-  '/settings',
-  [
-    check('language', 'Invalid language code').optional().isIn(['en', 'fr', 'es', 'de'])
-  ],
-  ShopController.updateShopSettings
-);
-
-// Get sync status
-router.get('/sync', ShopController.getSyncStatus);
-
-module.exports = router;
+export default router;

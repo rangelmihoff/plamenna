@@ -1,101 +1,53 @@
-const Subscription = require('../models/Subscription');
-const Plan = require('../models/Plan');
-const SubscriptionService = require('../services/subscriptionService');
-const { Shopify } = require('@shopify/shopify-api');
+// backend/controllers/subscriptionController.js
+// Manages subscription-related actions like viewing plans and changing plans.
 
-class SubscriptionController {
-  async getPlans(req, res, next) {
-    try {
-      const plans = await Plan.find({});
-      res.json({
-        success: true,
-        data: plans
-      });
-    } catch (err) {
-      next(err);
+import asyncHandler from 'express-async-handler';
+import Plan from '../models/Plan.js';
+import { changeSubscriptionPlan } from '../services/subscriptionService.js';
+import { updateSyncScheduleForShop } from '../utils/syncScheduler.js';
+import logger from '../utils/logger.js';
+
+/**
+ * @desc    Get all available subscription plans
+ * @route   GET /api/subscriptions/plans
+ * @access  Private
+ */
+const getAvailablePlans = asyncHandler(async (req, res) => {
+    const plans = await Plan.find({}).sort({ price: 'asc' });
+    res.status(200).json(plans);
+});
+
+/**
+ * @desc    Change the current shop's subscription plan
+ * @route   POST /api/subscriptions/change-plan
+ * @access  Private
+ */
+const selectPlan = asyncHandler(async (req, res) => {
+    const { newPlanName } = req.body;
+    const shopId = req.shop._id;
+
+    if (!newPlanName) {
+        res.status(400);
+        throw new Error('New plan name is required.');
     }
-  }
+    
+    logger.info(`Shop ${req.shop.shopifyDomain} is attempting to change plan to ${newPlanName}`);
 
-  async getCurrentSubscription(req, res, next) {
-    try {
-      const { shop } = req;
-      const subscription = await Subscription.findOne({ shop: shop._id }).populate('plan');
-      
-      if (!subscription) {
-        return res.status(404).json({
-          success: false,
-          message: 'No subscription found'
-        });
-      }
+    // In a real application, you would first create a charge in Shopify's Billing API.
+    // The user would be redirected to approve the charge.
+    // Upon approval, a webhook would notify your app, and only then would you
+    // call changeSubscriptionPlan.
 
-      res.json({
-        success: true,
-        data: subscription
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
+    // For this project's scope, we'll change the plan directly.
+    const updatedSubscription = await changeSubscriptionPlan(shopId, newPlanName);
 
-  async createSubscription(req, res, next) {
-    try {
-      const { shop } = req;
-      const { planName } = req.body;
+    // After changing the plan, we must update the sync schedule to match the new frequency.
+    await updateSyncScheduleForShop(shopId);
 
-      // Check if already has active subscription
-      const existing = await Subscription.findOne({ shop: shop._id });
-      if (existing && existing.isActive) {
-        return res.status(400).json({
-          success: false,
-          message: 'Shop already has an active subscription'
-        });
-      }
+    res.status(200).json({
+        message: `Plan successfully changed to ${newPlanName}.`,
+        subscription: updatedSubscription,
+    });
+});
 
-      // Create billing charge with Shopify
-      const plan = await Plan.findOne({ name: planName });
-      if (!plan) {
-        return res.status(404).json({
-          success: false,
-          message: 'Plan not found'
-        });
-      }
-
-      const client = new Shopify.Clients.Rest(shop.shopifyDomain, shop.accessToken);
-      const charge = await client.post({
-        path: 'recurring_application_charges',
-        data: {
-          recurring_application_charge: {
-            name: `AI SEO 2.0 - ${plan.name} Plan`,
-            price: plan.price,
-            return_url: `${process.env.HOST}/auth/callback`,
-            test: process.env.NODE_ENV !== 'production',
-            trial_days: 5
-          }
-        }
-      });
-
-      // Store charge ID temporarily (will be confirmed via webhook)
-      const subscription = new Subscription({
-        shop: shop._id,
-        plan: plan._id,
-        chargeId: charge.body.recurring_application_charge.id,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        isActive: false // Will be activated after payment
-      });
-
-      await subscription.save();
-
-      res.json({
-        success: true,
-        data: {
-          confirmationUrl: charge.body.recurring_application_charge.confirmation_url
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-}
-
-module.exports = new SubscriptionController();
+export { getAvailablePlans, selectPlan };

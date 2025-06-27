@@ -1,73 +1,87 @@
-const cron = require('node-cron');
-const Shop = require('../models/Shop');
-const ShopifyService = require('../services/shopifyService');
-const Subscription = require('../models/Subscription');
+// backend/utils/syncScheduler.js
+// This utility uses node-cron to schedule and manage periodic product synchronization tasks.
+// It ensures that data from Shopify stores is kept up-to-date automatically.
 
-class SyncScheduler {
-  constructor() {
-    this.jobs = new Map();
-  }
+import cron from 'node-cron';
+import Shop from '../models/Shop.js';
+import logger from './logger.js';
+import { syncProductsForShop } from '../services/shopifyService.js';
 
-  async initialize() {
-    // Load all active shops and schedule their sync
-    const shops = await Shop.find({ isActive: true }).populate({
-      path: 'subscription',
-      populate: { path: 'plan' }
+// A Map to keep track of running cron jobs for each shop.
+// The key is the shop's domain, and the value is the cron task instance.
+// This allows us to stop and reschedule jobs dynamically.
+const scheduledJobs = new Map();
+
+/**
+ * Schedules a new sync job for a given shop based on its subscription plan.
+ * @param {object} shop - The Mongoose shop object, populated with subscription and plan details.
+ */
+const scheduleSyncForShop = (shop) => {
+    const shopDomain = shop.shopifyDomain;
+
+    // Stop any existing job for this shop to prevent duplicates on restart or plan change.
+    if (scheduledJobs.has(shopDomain)) {
+        scheduledJobs.get(shopDomain).stop();
+        logger.info(`Stopped existing sync job for ${shopDomain} before rescheduling.`);
+    }
+    
+    // A shop must have a subscription and a plan to have a schedule.
+    if (!shop.subscription || !shop.subscription.plan) {
+        logger.warn(`Shop ${shopDomain} has no subscription plan. Skipping sync schedule.`);
+        return;
+    }
+
+    const syncHours = shop.subscription.plan.syncFrequencyHours;
+    // Define the cron expression. e.g., '0 */12 * * *' runs at minute 0 of every 12th hour.
+    const cronExpression = `0 */${syncHours} * * *`;
+
+    // Create the scheduled task.
+    const task = cron.schedule(cronExpression, async () => {
+        logger.info(`[CRON] Running scheduled product sync for ${shopDomain}`);
+        try {
+            await syncProductsForShop(shopDomain);
+        } catch (error) {
+            logger.error(`[CRON] Scheduled sync failed for ${shopDomain}: ${error.message}`);
+        }
+    }, {
+        scheduled: true,
+        timezone: "Etc/UTC" // Use UTC for consistency across different server timezones.
     });
 
-    for (const shop of shops) {
-      this.scheduleShopSync(shop);
+    // Store the new job in our map.
+    scheduledJobs.set(shopDomain, task);
+    logger.info(`Scheduled product sync for ${shopDomain} with expression: ${cronExpression} (every ${syncHours} hours).`);
+};
+
+/**
+ * Initializes the scheduler for all active shops when the server starts.
+ */
+export const startSyncScheduler = async () => {
+    logger.info('Initializing sync scheduler for all active shops...');
+    try {
+        // Find all active shops and populate their subscription details.
+        const activeShops = await Shop.find({ isActive: true })
+            .populate({ path: 'subscription', populate: { path: 'plan' } });
+
+        for (const shop of activeShops) {
+            scheduleSyncForShop(shop);
+        }
+        logger.info(`Scheduler initialized for ${activeShops.length} shops.`);
+    } catch (error) {
+        logger.error('Error during sync scheduler initialization:', error);
     }
-  }
+};
 
-  scheduleShopSync(shop) {
-    if (this.jobs.has(shop._id.toString())) {
-      this.jobs.get(shop._id.toString()).stop();
+/**
+ * Updates a specific shop's sync schedule. Called after a plan change.
+ * @param {string} shopId - The MongoDB ObjectId of the shop to update.
+ */
+export const updateSyncScheduleForShop = async (shopId) => {
+     const shop = await Shop.findById(shopId)
+        .populate({ path: 'subscription', populate: { path: 'plan' } });
+
+    if (shop) {
+        logger.info(`Updating sync schedule for ${shop.shopifyDomain} due to a plan change.`);
+        scheduleSyncForShop(shop);
     }
-
-    const frequency = this.getCronFrequency(shop.subscription.plan.syncFrequency);
-    if (!frequency) return;
-
-    const job = cron.schedule(frequency, async () => {
-      try {
-        console.log(`Running sync for shop: ${shop.shopifyDomain}`);
-        await ShopifyService.syncProducts(shop.shopifyDomain);
-        
-        // Update sync timestamps
-        await Shop.findByIdAndUpdate(shop._id, {
-          lastSync: new Date(),
-          nextSync: this.getNextSyncDate(shop.subscription.plan.syncFrequency)
-        });
-      } catch (err) {
-        console.error(`Sync failed for ${shop.shopifyDomain}:`, err);
-      }
-    });
-
-    this.jobs.set(shop._id.toString(), job);
-  }
-
-  getCronFrequency(syncFrequency) {
-    switch (syncFrequency) {
-      case 'every 2 weeks': return '0 0 */14 * *';
-      case 'every 48h': return '0 0 */2 * *';
-      case 'every 24h': return '0 0 * * *';
-      case 'every 12h': return '0 */12 * * *';
-      case 'every 2h': return '0 */2 * * *';
-      default: return null;
-    }
-  }
-
-  getNextSyncDate(syncFrequency) {
-    const now = new Date();
-    switch (syncFrequency) {
-      case 'every 2 weeks': return new Date(now.setDate(now.getDate() + 14));
-      case 'every 48h': return new Date(now.setHours(now.getHours() + 48));
-      case 'every 24h': return new Date(now.setHours(now.getHours() + 24));
-      case 'every 12h': return new Date(now.setHours(now.getHours() + 12));
-      case 'every 2h': return new Date(now.setHours(now.getHours() + 2));
-      default: return null;
-    }
-  }
-}
-
-module.exports = new SyncScheduler();
+};

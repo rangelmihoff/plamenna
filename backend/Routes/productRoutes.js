@@ -1,26 +1,28 @@
-const express = require('express');
+// backend/routes/productRoutes.js
+// Defines the API routes for managing products.
+
+import express from 'express';
+import { getProducts, syncProducts, getProductById, updateProductSeo } from '../controllers/productController.js';
+import { protect } from '../middleware/auth.js';
+
 const router = express.Router();
-const ProductController = require('../controllers/productController');
-const { check } = require('express-validator');
-const authMiddleware = require('../middleware/auth');
 
-// Protect all routes
-router.use(authMiddleware);
+// All product routes are protected and require a valid shop session (JWT).
+router.use(protect);
 
-// Get products
-router.get('/', ProductController.getProducts);
+// @desc    Fetch all products for the logged-in shop
+// @route   GET /api/products
+router.route('/').get(getProducts);
 
-// Sync products
-router.post('/sync', ProductController.syncProducts);
+// @desc    Manually trigger a product sync with Shopify
+// @route   POST /api/products/sync
+router.route('/sync').post(syncProducts);
 
-// Optimize product SEO
-router.post(
-  '/:productId/optimize',
-  [
-    check('fields', 'Fields to optimize are required').not().isEmpty(),
-    check('fields', 'Fields must be an array').isArray(),
-  ],
-  ProductController.optimizeProductSEO
-);
+// @desc    Fetch a single product and update its SEO data
+// @route   GET /api/products/:id
+// @route   PUT /api/products/:id
+router.route('/:id')
+  .get(getProductById)
+  .put(updateProductSeo); // This route will be used to apply the generated SEO
 
-module.exports = router;
+export default router;
