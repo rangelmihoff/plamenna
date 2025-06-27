@@ -6,8 +6,9 @@ WORKDIR /app
 COPY frontend/package*.json ./frontend/
 # Set the working directory to where the package.json is
 WORKDIR /app/frontend
-# Install frontend dependencies
-RUN npm install
+# Use 'npm ci' for faster, more reliable installs in CI/CD environments.
+# This requires a package-lock.json file to be present.
+RUN npm ci
 # Now copy the rest of the frontend source code into the current directory (/app/frontend)
 COPY frontend/ .
 # Run the build from within the frontend directory, where index.html is located
@@ -17,8 +18,8 @@ FROM node:18.18.0-alpine
 WORKDIR /app
 # Copy backend package files
 COPY backend/package*.json ./
-# Install only production dependencies for the backend
-RUN npm install --omit=dev
+# Use 'npm ci' for the backend as well
+RUN npm ci --omit=dev
 # Copy backend source code
 COPY backend/ ./
 # Copy the built frontend assets from the builder stage
