@@ -1,44 +1,30 @@
 # Stage 1: Build the frontend
 # Use a specific Node.js version for consistency
 FROM node:18.18.0-alpine AS builder
-
-# Set working directory
 WORKDIR /app
-
-# Copy frontend package.json and lock file
-COPY frontend/package*.json ./
-
+# Copy only the package files first to a dedicated 'frontend' subdirectory to leverage Docker cache
+COPY frontend/package*.json ./frontend/
+# Set the working directory to where the package.json is
+WORKDIR /app/frontend
 # Install frontend dependencies
 RUN npm install
-
-# Copy the rest of the frontend source code
-COPY frontend/ ./
-
-# Build the frontend application
+# Now copy the rest of the frontend source code into the current directory (/app/frontend)
+COPY frontend/ .
+# Run the build from within the frontend directory, where index.html is located
 RUN npm run build
-
 # Stage 2: Setup the production backend
 FROM node:18.18.0-alpine
-
 WORKDIR /app
-
-# Copy backend package.json and lock file
+# Copy backend package files
 COPY backend/package*.json ./
-
 # Install only production dependencies for the backend
 RUN npm install --omit=dev
-
-# Copy the rest of the backend source code
+# Copy backend source code
 COPY backend/ ./
-
-# Copy the built frontend static assets from the builder stage
-# The path should be relative to the WORKDIR, which is /app
-COPY --from=builder /app/dist ./frontend/dist
-
-# Expose the port the app will run on.
-# Railway provides the PORT environment variable automatically.
+# Copy the built frontend assets from the builder stage
+# The build output is now located at /app/frontend/dist
+COPY --from=builder /app/frontend/dist ./frontend/dist
+# Expose the port the app will run on. Railway provides this automatically.
 EXPOSE 8081
-
 # Command to run the application
-# We use server.js as the entry point
 CMD ["node", "server.js"]
