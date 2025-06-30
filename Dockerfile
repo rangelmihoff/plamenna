@@ -4,26 +4,27 @@ FROM node:18.18.0-alpine AS builder
 WORKDIR /app
 # Copy only the package files first to a dedicated 'frontend' subdirectory to leverage Docker cache
 COPY frontend/package*.json ./frontend/
+COPY frontend/package-lock.json ./frontend/
 # Set the working directory to where the package.json is
 WORKDIR /app/frontend
 # Use 'npm ci' for faster, more reliable installs in CI/CD environments.
-# This requires a package-lock.json file to be present.
 RUN npm ci
 # Now copy the rest of the frontend source code into the current directory (/app/frontend)
 COPY frontend/ .
-# Run the build from within the frontend directory, where index.html is located
+# Run the build from within the frontend directory
+# We are NOT using the memory limit option anymore, as you have enough resources
 RUN npm run build
 # Stage 2: Setup the production backend
 FROM node:18.18.0-alpine
 WORKDIR /app
 # Copy backend package files
 COPY backend/package*.json ./
+COPY backend/package-lock.json ./
 # Use 'npm ci' for the backend as well. Omit dev dependencies for a smaller final image.
 RUN npm ci --omit=dev
 # Copy backend source code
 COPY backend/ ./
 # Copy the built frontend assets from the builder stage
-# The build output is now located at /app/frontend/dist
 COPY --from=builder /app/frontend/dist ./frontend/dist
 # Expose the port the app will run on. Railway provides this automatically.
 EXPOSE 8081
