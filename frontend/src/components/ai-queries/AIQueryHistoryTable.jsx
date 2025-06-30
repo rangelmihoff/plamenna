@@ -3,7 +3,7 @@
 
 import { IndexTable, Text, Thumbnail, Badge } from '@shopify/polaris';
 import { useTranslation } from 'react-i18next';
-import { QuestionMarkMajor } from '@shopify/polaris-icons';
+// REMOVED the problematic icon import entirely.
 
 const AIQueryHistoryTable = ({ queries }) => {
     const { t, i18n } = useTranslation();
@@ -12,9 +12,12 @@ const AIQueryHistoryTable = ({ queries }) => {
         <IndexTable.Row id={query._id} key={query._id} position={index}>
             <IndexTable.Cell>
                 <Thumbnail
-                    source={query.product?.imageUrl || QuestionMarkMajor}
+                    // FINAL FIX: If there's no image URL, the Thumbnail will show initials.
+                    // This avoids importing any icons and guarantees the build will not fail.
+                    source={query.product?.imageUrl}
                     alt={query.product?.title || 'General Query'}
                     size="small"
+                    initials={(query.product?.title || 'Q').charAt(0)}
                 />
             </IndexTable.Cell>
             <IndexTable.Cell>
@@ -60,4 +63,3 @@ const AIQueryHistoryTable = ({ queries }) => {
 };
 
 export default AIQueryHistoryTable;
-
