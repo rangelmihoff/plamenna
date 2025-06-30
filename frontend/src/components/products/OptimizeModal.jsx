@@ -2,7 +2,8 @@
 // The modal component for the AI SEO Optimizer.
 
 import { useState, useCallback, useMemo } from 'react';
-import { Modal, BlockStack, Select, RadioButton, Text, TextArea, Button, Spinner, Card } from '@shopify/polaris';
+// CORRECTED: Replaced 'TextArea' with 'TextField' which is the correct component.
+import { Modal, BlockStack, Select, RadioButton, Text, TextField, Button, Spinner, Card } from '@shopify/polaris';
 import { useTranslation } from 'react-i18next';
 import { useShop } from '../../hooks/useShop';
 import { useGenerateSeoMutation } from '../../hooks/useAI';
@@ -116,12 +117,14 @@ const OptimizeModal = ({ isOpen, onClose, product }) => {
                         <RadioButton label={t('optimizerModal.altText')} checked={contentType === 'altText'} id="altText" name="contentType" onChange={() => setContentType('altText')} />
                     </BlockStack>
                     
-                    <TextArea
+                    {/* CORRECTED: Used TextField with the multiline prop */}
+                    <TextField
                         label={t('optimizerModal.customInstruction')}
                         value={customInstruction}
                         onChange={setCustomInstruction}
                         autoComplete="off"
                         placeholder={t('optimizerModal.customInstructionPlaceholder')}
+                        multiline={3}
                     />
 
                     <Button onClick={handleGenerate} loading={seoMutation.isPending} disabled={!selectedProvider}>
