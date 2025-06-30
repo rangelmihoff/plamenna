@@ -27,5 +27,5 @@ COPY --from=backend-builder /app/ .
 COPY --from=frontend-builder /app/dist ./frontend/dist
 # Expose the port.
 EXPOSE 8081
-# Set the final command to run the server. The WORKDIR is /app, and server.js is directly in /app.
-CMD ["node", "server.js"]
+# Command to run the application
+CMD ["node", "app.js"]
