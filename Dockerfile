@@ -1,32 +1,28 @@
-# Stage 1: Build the frontend
-# Use the 'slim' variant for better compatibility with native modules
-FROM node:18.18.0-slim AS builder
-# Set a higher memory limit for the build process just in case
-ENV NODE_OPTIONS=--max-old-space-size=4096
-WORKDIR /app
-# Copy package files
-COPY frontend/package*.json ./frontend/
+# Stage 1: Frontend Builder
+# This stage builds the static frontend assets.
+FROM node:18.18.0-slim AS frontend-builder
 WORKDIR /app/frontend
-# Use 'npm ci' for reliable installs
+COPY frontend/package*.json ./
 RUN npm ci
-# Copy the rest of the frontend source code
 COPY frontend/ .
-# Run the build
 RUN npm run build
-# Stage 2: Setup the production backend
-FROM node:18.18.0-slim
+# Stage 2: Backend Dependencies
+# This stage installs only the production backend dependencies.
+FROM node:18.18.0-slim AS backend-dependencies
 WORKDIR /app
-# Unset the memory limit for the runtime environment
-ENV NODE_OPTIONS=""
-# Copy backend package files
 COPY backend/package*.json ./
 COPY backend/package-lock.json ./
-# Install backend dependencies
 RUN npm ci --omit=dev
-# Copy the rest of the backend source code
-COPY backend/ ./
-# Copy the built frontend assets from the builder stage
-COPY --from=builder /app/frontend/dist ./frontend/dist
+# Stage 3: Final Production Image
+# This is the final, clean image that will run in production.
+FROM node:18.18.0-slim
+WORKDIR /app
+# Copy installed backend dependencies from the previous stage
+COPY --from=backend-dependencies /app/node_modules ./node_modules
+# Copy the backend source code
+COPY backend/ .
+# Copy the built frontend assets from the first stage
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 # Expose the port the app will run on
 EXPOSE 8081
 # Command to run the application
