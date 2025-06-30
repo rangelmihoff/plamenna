@@ -10,15 +10,17 @@ RUN npm run build
 FROM node:18.18.0-slim
 WORKDIR /app
 # Copy the backend source code into a 'backend' subdirectory.
-# This preserves the entire folder structure.
 COPY backend/ ./backend/
 # Set the working directory to the backend folder.
 WORKDIR /app/backend
 # Install backend production dependencies.
 RUN npm install --omit=dev
 # Copy the pre-built frontend assets from the builder stage into the correct final location.
-# The destination is relative to the current WORKDIR (/app/backend).
 COPY --from=frontend-builder /app/dist ./frontend/dist
+# --- FINAL DIAGNOSTIC STEP ---
+# List all files recursively in the final image right before starting the server.
+# This will show us the exact file structure at runtime.
+RUN ls -R /app
 # Expose the port.
 EXPOSE 8081
 # The command to start the server. Node will look for server.js in the current WORKDIR.
