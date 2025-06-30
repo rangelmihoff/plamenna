@@ -6,7 +6,7 @@ import { Frame, Navigation } from '@shopify/polaris';
 // FINAL CORRECTION: Using the correct '...Icon' suffix for all icons.
 import {
   HomeIcon,
-  ProductsIcon,
+  ProductIcon, // CORRECTED: The icon is singular 'ProductIcon'.
   AnalyticsIcon,
   SettingsIcon,
   QuestionIcon, // Using for AI Queries
@@ -36,7 +36,7 @@ function App() {
           {
             url: '/products',
             label: t('navigation.products'),
-            icon: ProductsIcon,
+            icon: ProductIcon, // CORRECTED
             selected: location.pathname.startsWith('/products'),
             onClick: () => navigate('/products'),
           },
