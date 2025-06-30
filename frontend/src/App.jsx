@@ -3,12 +3,13 @@
 // including the navigation menu and top bar, and renders the routes.
 
 import { Frame, Navigation } from '@shopify/polaris';
+// FINAL CORRECTION: Using the correct '...Icon' suffix for all icons.
 import {
-  HomeMajor,
-  ProductsMajor,
-  AnalyticsMajor,
-  SettingsMajor,
-  QuestionMarkMajor, // Using for AI Queries
+  HomeIcon,
+  ProductsIcon,
+  AnalyticsIcon,
+  SettingsIcon,
+  QuestionIcon, // Using for AI Queries
 } from '@shopify/polaris-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +21,7 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Define the navigation menu structure
+  // Define the navigation menu structure with corrected icons
   const navigationMarkup = (
     <Navigation location={location.pathname}>
       <Navigation.Section
@@ -28,36 +29,35 @@ function App() {
           {
             url: '/',
             label: t('navigation.dashboard'),
-            icon: HomeMajor,
-            // Determine if the item is selected based on the current URL path
+            icon: HomeIcon,
             selected: location.pathname === '/',
             onClick: () => navigate('/'),
           },
           {
             url: '/products',
             label: t('navigation.products'),
-            icon: ProductsMajor,
+            icon: ProductsIcon,
             selected: location.pathname.startsWith('/products'),
             onClick: () => navigate('/products'),
           },
           {
             url: '/ai-queries',
             label: t('navigation.ai_queries'),
-            icon: QuestionMarkMajor,
+            icon: QuestionIcon,
             selected: location.pathname.startsWith('/ai-queries'),
             onClick: () => navigate('/ai-queries'),
           },
           {
             url: '/analytics',
             label: t('navigation.analytics'),
-            icon: AnalyticsMajor,
+            icon: AnalyticsIcon,
             selected: location.pathname.startsWith('/analytics'),
             onClick: () => navigate('/analytics'),
           },
           {
             url: '/settings',
             label: t('navigation.settings'),
-            icon: SettingsMajor,
+            icon: SettingsIcon,
             selected: location.pathname.startsWith('/settings'),
             onClick: () => navigate('/settings'),
           },
