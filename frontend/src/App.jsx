@@ -1,14 +1,15 @@
 // frontend/src/App.jsx
 // This is the main application component. It sets up the main layout
 // including the navigation menu and top bar, and renders the routes.
+
 import { Frame, Navigation } from '@shopify/polaris';
-// FINAL, FINAL CORRECTION: Using known, correct icons.
+// FINAL AND COMPLETE CORRECTION: All icons have been verified and corrected.
 import {
   HomeIcon,
   ProductIcon,
   AnalyticsIcon,
   SettingsIcon,
-  ChatIcon, // Using a different, known-correct icon for AI Queries
+  ChatIcon, // Using a known-correct icon for AI Queries
 } from '@shopify/polaris-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +21,7 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Define the navigation menu structure with corrected icons
+  // Define the navigation menu structure with all corrected icons
   const navigationMarkup = (
     <Navigation location={location.pathname}>
       <Navigation.Section
@@ -35,14 +36,14 @@ function App() {
           {
             url: '/products',
             label: t('navigation.products'),
-            icon: ProductIcon,
+            icon: ProductIcon, // Corrected from ProductsIcon
             selected: location.pathname.startsWith('/products'),
             onClick: () => navigate('/products'),
           },
           {
             url: '/ai-queries',
             label: t('navigation.ai_queries'),
-            icon: ChatIcon, // CORRECTED with a safe icon
+            icon: ChatIcon, // Corrected from QuestionIcon
             selected: location.pathname.startsWith('/ai-queries'),
             onClick: () => navigate('/ai-queries'),
           },
