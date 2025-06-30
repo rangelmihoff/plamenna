@@ -2,8 +2,9 @@
 FROM node:18.18.0-slim
 # Set the main working directory for the project
 WORKDIR /app
-# Copy all project files into the container
-COPY . .
+# Copy backend and frontend folders explicitly to avoid ambiguity
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 # --- Install Backend Dependencies ---
 # Move into the backend directory and install production dependencies
 WORKDIR /app/backend
@@ -14,10 +15,9 @@ WORKDIR /app/frontend
 RUN npm install
 RUN npm run build
 # --- Final Setup & CMD ---
-# Set the final working directory to the project root
-WORKDIR /app
+# Set the final working directory to the backend folder
+WORKDIR /app/backend
 # Expose the port the server will run on
 EXPOSE 8081
-# The command to start the server, using an absolute path to server.js
-# This guarantees that the file will be found regardless of the final WORKDIR.
-CMD ["node", "backend/server.js"]
+# The command to start the server. Node will look for server.js in the current WORKDIR.
+CMD ["node", "server.js"]
