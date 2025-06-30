@@ -26,13 +26,13 @@ const AIQueryHistoryTable = ({ queries }) => {
             <IndexTable.Cell>
                 {query.provider}
             </IndexTable.Cell>
-             <IndexTable.Cell>
+            <IndexTable.Cell>
                 {query.contentType}
             </IndexTable.Cell>
             <IndexTable.Cell>
                 <Text as="p" tone="subdued">{query.response}</Text>
             </IndexTable.Cell>
-             <IndexTable.Cell>
+            <IndexTable.Cell>
                 <Badge tone={query.success ? 'success' : 'critical'}>
                     {query.success ? 'Success' : 'Failed'}
                 </Badge>
