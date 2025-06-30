@@ -6,7 +6,7 @@ import { Frame, Navigation } from '@shopify/polaris';
 import {
   HomeIcon,
   ProductIcon,
-  ReportIcon, // CORRECTED: Using ReportIcon for Analytics for stability.
+  NoteIcon, // CORRECTED: Using a different, known-correct icon for Analytics.
   SettingsIcon,
   ChatIcon, // Using a known-correct icon for AI Queries
 } from '@shopify/polaris-icons';
@@ -47,7 +47,7 @@ function App() {
           {
             url: '/analytics',
             label: t('navigation.analytics'),
-            icon: ReportIcon, // CORRECTED with a safe icon
+            icon: NoteIcon, // CORRECTED with a safe icon
             selected: location.pathname.startsWith('/analytics'),
             onClick: () => navigate('/analytics'),
           },
