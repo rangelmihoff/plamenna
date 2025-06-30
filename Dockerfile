@@ -19,8 +19,6 @@ RUN npm install --omit=dev
 COPY --from=frontend-builder /app/dist ./frontend/dist
 # --- FINAL DIAGNOSTIC STEP ---
 # List all files recursively in the final image right before starting the server.
-# This will show us the exact file structure at runtime.
-RUN ls -R /app
 # Expose the port.
 EXPOSE 8081
 # The command to start the server. Node will look for server.js in the current WORKDIR.
