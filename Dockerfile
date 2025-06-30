@@ -1,31 +1,22 @@
 # Stage 1: Frontend Builder
-# This stage builds the static frontend assets in an isolated environment.
+# This stage builds the static frontend assets. It remains unchanged.
 FROM node:18.18.0-slim AS frontend-builder
 WORKDIR /app
-# Copy the frontend source code into the build stage
 COPY frontend/ .
 RUN npm install
 RUN npm run build
-# Stage 2: Backend Builder
-# This stage prepares the production backend dependencies and source code.
-FROM node:18.18.0-slim AS backend-builder
-WORKDIR /app
-# Copy the backend source code into the build stage
-COPY backend/ .
-RUN npm install --omit=dev
-# Stage 3: Final Production Image
-# This is the final, clean image that will run in production.
+# Stage 2: Final Production Image
+# We combine the backend setup and final image into a single, more reliable stage.
 FROM node:18.18.0-slim
 WORKDIR /app
-# Copy the prepared backend (source + node_modules) from the backend-builder stage.
-# This places everything from the /app folder in the builder (which contains the backend code)
-# directly into the /app folder of the final image.
-# So server.js is now at /app/server.js, package.json is at /app/package.json etc.
-COPY --from=backend-builder /app/ .
-# Copy the built frontend assets from the frontend-builder stage.
-# The destination path needs to be correct for the Express static server to find it.
+# Copy the backend source code and package files directly into the final image.
+# This ensures all subdirectories like 'middleware', 'routes', etc., are present.
+COPY backend/ .
+# Install backend production dependencies directly in the final image.
+RUN npm install --omit=dev
+# Copy the pre-built frontend assets from the builder stage.
 COPY --from=frontend-builder /app/dist ./frontend/dist
 # Expose the port.
 EXPOSE 8081
-# Set the final command to run the server. The WORKDIR is /app, and server.js is directly in /app.
+# Set the final command to run the server. The WORKDIR is /app, and server.js is here.
 CMD ["node", "server.js"]
