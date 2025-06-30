@@ -2,24 +2,27 @@
 // This controller handles the entire Shopify OAuth 2.0 flow.
 
 import asyncHandler from 'express-async-handler';
-import { shopifyApi, LATEST_API_VERSION, Session } from '@shopify/shopify-api';
+import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
 import Shop from '../models/Shop.js';
 import generateToken from '../utils/generateToken.js';
 import logger from '../utils/logger.js';
 import { createNewSubscription } from '../services/subscriptionService.js';
 import { syncProductsForShop } from '../services/shopifyService.js';
 
-// Initialize the Shopify API client library
-const shopify = shopifyApi({
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET,
-  scopes: process.env.SHOPIFY_API_SCOPES.split(','),
-  hostName: process.env.HOST.replace(/https?:\/\//, ''),
-  apiVersion: LATEST_API_VERSION,
-  isEmbeddedApp: true,
-  // This is important for session storage
-  sessionStorage: new shopifyApi.session.MemorySessionStorage(),
-});
+// Helper function to initialize the Shopify API client.
+// This ensures environment variables are loaded before the client is created.
+const getShopifyClient = () => {
+    return shopifyApi({
+        apiKey: process.env.SHOPIFY_API_KEY,
+        apiSecretKey: process.env.SHOPIFY_API_SECRET,
+        // This check prevents the .split error if the variable is not set
+        scopes: process.env.SHOPIFY_API_SCOPES ? process.env.SHOPIFY_API_SCOPES.split(',') : [],
+        hostName: process.env.HOST.replace(/https?:\/\//, ''),
+        apiVersion: LATEST_API_VERSION,
+        isEmbeddedApp: true,
+        sessionStorage: new shopifyApi.session.MemorySessionStorage(),
+    });
+};
 
 /**
  * @desc    Initiates the Shopify OAuth process by redirecting the merchant.
@@ -35,6 +38,7 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
 
   logger.info(`Initiating auth for shop: ${shopDomain}`);
   
+  const shopify = getShopifyClient();
   const authUrl = await shopify.auth.begin({
     shop: shopDomain,
     callbackPath: '/api/auth/shopify/callback',
@@ -50,6 +54,7 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const handleShopifyCallback = asyncHandler(async (req, res) => {
+  const shopify = getShopifyClient();
   const callback = await shopify.auth.callback({
     rawRequest: req,
     rawResponse: res,
@@ -94,11 +99,6 @@ const handleShopifyCallback = asyncHandler(async (req, res) => {
       logger.error(`Initial sync failed for ${shopifyDomain}: ${err.message}`);
     });
   }
-
-  // --- Billing API Integration ---
-  // In a real app, this is where you would redirect the merchant to approve the
-  // recurring charge for the subscription.
-  // For this project, we've automatically started a trial.
 
   // Redirect to the frontend app within the Shopify admin
   const host = req.query.host; // This is the base64 encoded admin URL
