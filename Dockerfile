@@ -1,29 +1,30 @@
 # Stage 1: Frontend Builder
-# This stage builds the static frontend assets.
+# Builds the static frontend assets in a completely isolated environment.
 FROM node:18.18.0-slim AS frontend-builder
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ .
-RUN npm run build
-# Stage 2: Backend Dependencies
-# This stage installs only the production backend dependencies.
-FROM node:18.18.0-slim AS backend-dependencies
 WORKDIR /app
-COPY backend/package*.json ./
-COPY backend/package-lock.json ./
-RUN npm ci --omit=dev
+# Copy the entire frontend folder content directly into the workdir.
+# This makes /app the root of the frontend project during this stage.
+COPY frontend/ .
+# Run install and build. All paths (like ./src/translations/en.json) will be resolved correctly from here.
+RUN npm install
+RUN npm run build
+# Stage 2: Backend Builder
+# Prepares the backend code and production dependencies in another isolated environment.
+FROM node:18.18.0-slim AS backend-builder
+WORKDIR /app
+# Copy the entire backend folder content into the workdir.
+COPY backend/ .
+# Install only production dependencies.
+RUN npm install --omit=dev
 # Stage 3: Final Production Image
-# This is the final, clean image that will run in production.
+# Assembles the final, clean image from the previous stages.
 FROM node:18.18.0-slim
 WORKDIR /app
-# Copy installed backend dependencies from the previous stage
-COPY --from=backend-dependencies /app/node_modules ./node_modules
-# Copy the backend source code
-COPY backend/ .
-# Copy the built frontend assets from the first stage
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
-# Expose the port the app will run on
+# Copy the prepared backend (source + node_modules) from the backend-builder stage.
+COPY --from=backend-builder /app/ .
+# Copy the built frontend assets from the frontend-builder stage into the correct final location.
+COPY --from=frontend-builder /app/dist ./frontend/dist
+# Expose the port.
 EXPOSE 8081
-# Command to run the application
+# Set the final command to run the server.
 CMD ["node", "server.js"]
