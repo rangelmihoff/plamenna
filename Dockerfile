@@ -3,8 +3,9 @@
 FROM node:18.18.0-slim AS frontend-builder
 WORKDIR /app
 # Copy the entire frontend folder content directly into the workdir.
+# This makes /app the root of the frontend project during this stage.
 COPY frontend/ .
-# Run install and build.
+# Run install and build. All paths (like ./src/translations/en.json) will be resolved correctly from here.
 RUN npm install
 RUN npm run build
 # Stage 2: Backend Builder
