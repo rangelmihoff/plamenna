@@ -1,7 +1,8 @@
 // frontend/src/components/settings/PlanSelector.jsx
 // This component displays the available subscription plans and allows the user to change their plan.
 
-import { useAppQuery, useAppMutation } from '../../hooks'; // Using custom index for hooks
+import { useAppQuery } from '../../hooks/useAppQuery';
+import { useAppMutation } from '../../hooks/useAppMutation';
 import { useShop } from '../../hooks/useShop';
 import { useTranslation } from 'react-i18next';
 import { BlockStack, Card, Text, Button, InlineGrid, Spinner } from '@shopify/polaris';
@@ -39,6 +40,7 @@ const PlanCard = ({ plan, isCurrent, onSelect, isLoading }) => {
 
 const PlanSelector = () => {
     const queryClient = useQueryClient();
+    const { t } = useTranslation();
     const { data: plansData, isLoading: isLoadingPlans } = useAppQuery({ url: '/api/subscriptions/plans', queryKey: ['plans'] });
     const { data: shopData } = useShop();
 
@@ -53,6 +55,7 @@ const PlanSelector = () => {
 
     if (isLoadingPlans) return <Spinner />;
 
+    // The current plan ID is nested inside the subscription object.
     const currentPlanId = shopData?.subscription?.plan;
     
     return (
