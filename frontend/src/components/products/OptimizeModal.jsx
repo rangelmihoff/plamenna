@@ -1,18 +1,30 @@
 // frontend/src/components/products/OptimizeModal.jsx
 // The modal component for the AI SEO Optimizer.
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Modal, BlockStack, Select, RadioButton, Text, TextArea, Button, Spinner, Card } from '@shopify/polaris';
 import { useTranslation } from 'react-i18next';
 import { useShop } from '../../hooks/useShop';
 import { useGenerateSeoMutation } from '../../hooks/useAI';
 import { useQueryClient } from '@tanstack/react-query';
-import { AI_PROVIDER_CONFIG } from '../../../../backend/config/aiProviders'; // We can get this from backend or duplicate it
+import { useAppBridge } from '@shopify/app-bridge-react';
+import { Toast } from '@shopify/app-bridge/actions';
+
+// This is the CORRECT way to handle provider names on the frontend.
+// It's a simple mapping object, NOT an import from the backend.
+const AI_PROVIDER_DISPLAY_NAMES = {
+  claude: 'Claude (Anthropic)',
+  openai: 'OpenAI',
+  gemini: 'Gemini (Google)',
+  deepseek: 'DeepSeek',
+  llama: 'Llama',
+};
 
 const OptimizeModal = ({ isOpen, onClose, product }) => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { data: shopData } = useShop();
+    const app = useAppBridge();
+    const { data: shopData, isLoading: isLoadingShop } = useShop();
     const seoMutation = useGenerateSeoMutation();
 
     const [selectedProvider, setSelectedProvider] = useState('');
@@ -20,14 +32,31 @@ const OptimizeModal = ({ isOpen, onClose, product }) => {
     const [customInstruction, setCustomInstruction] = useState('');
     const [generatedContent, setGeneratedContent] = useState('');
 
-    const planProviders = shopData?.plan?.aiProviders || [];
-    const providerOptions = planProviders.map(p => ({ label: AI_PROVIDER_CONFIG[p]?.name || p, value: p }));
+    // Get the list of available providers from the user's plan (fetched via API by useShop hook)
+    const availableProviders = useMemo(() => {
+        return shopData?.plan?.aiProviders || [];
+    }, [shopData]);
+
+    const providerOptions = availableProviders.map(providerKey => ({
+        label: AI_PROVIDER_DISPLAY_NAMES[providerKey] || providerKey,
+        value: providerKey,
+    }));
+    
+    // Set a default provider if available
+    useState(() => {
+        if (providerOptions.length > 0 && !selectedProvider) {
+            setSelectedProvider(providerOptions[0].value);
+        }
+    }, [providerOptions, selectedProvider]);
+
 
     const handleGenerate = useCallback(() => {
         if (!selectedProvider) {
-            // Add user feedback, e.g., a toast message
+            const errorToast = Toast.create(app, { message: 'Please select an AI provider.', isError: true });
+            errorToast.dispatch(Toast.Action.SHOW);
             return;
         }
+        setGeneratedContent(''); // Clear previous content
         seoMutation.mutate({
             productId: product._id,
             provider: selectedProvider,
@@ -38,21 +67,26 @@ const OptimizeModal = ({ isOpen, onClose, product }) => {
                 setGeneratedContent(data.content);
             }
         });
-    }, [selectedProvider, product._id, contentType, customInstruction, seoMutation]);
+    }, [selectedProvider, product._id, contentType, customInstruction, seoMutation, app]);
 
     const handleApply = () => {
         // Here you would call another mutation to save the generated content to the product
-        // e.g., useAppMutation({ url: `/api/products/${product._id}`, method: 'put' })
         console.log("Applying content:", generatedContent);
-        // After applying, invalidate the product query to refetch data
+        const successToast = Toast.create(app, { message: 'Content applied successfully!' });
+        successToast.dispatch(Toast.Action.SHOW);
         queryClient.invalidateQueries({ queryKey: ['products'] });
         onClose();
     };
+    
+    const handleClose = () => {
+        setGeneratedContent('');
+        onClose();
+    }
 
     return (
         <Modal
             open={isOpen}
-            onClose={onClose}
+            onClose={handleClose}
             title={`${t('optimizerModal.title')} "${product.title}"`}
             primaryAction={{
                 content: t('optimizerModal.apply'),
@@ -61,7 +95,7 @@ const OptimizeModal = ({ isOpen, onClose, product }) => {
             }}
             secondaryActions={[{
                 content: t('optimizerModal.close'),
-                onAction: onClose,
+                onAction: handleClose,
             }]}
         >
             <Modal.Section>
@@ -72,13 +106,14 @@ const OptimizeModal = ({ isOpen, onClose, product }) => {
                         onChange={setSelectedProvider}
                         value={selectedProvider}
                         placeholder="--"
+                        disabled={isLoadingShop || providerOptions.length === 0}
                     />
                     
                     <BlockStack gap="300">
                         <Text as="p" fontWeight="semibold">{t('optimizerModal.selectContent')}</Text>
-                        <RadioButton label={t('optimizerModal.metaTitle')} checked={contentType === 'metaTitle'} onChange={() => setContentType('metaTitle')} />
-                        <RadioButton label={t('optimizerModal.metaDescription')} checked={contentType === 'metaDescription'} onChange={() => setContentType('metaDescription')} />
-                        <RadioButton label={t('optimizerModal.altText')} checked={contentType === 'altText'} onChange={() => setContentType('altText')} />
+                        <RadioButton label={t('optimizerModal.metaTitle')} checked={contentType === 'metaTitle'} id="metaTitle" name="contentType" onChange={() => setContentType('metaTitle')} />
+                        <RadioButton label={t('optimizerModal.metaDescription')} checked={contentType === 'metaDescription'} id="metaDescription" name="contentType" onChange={() => setContentType('metaDescription')} />
+                        <RadioButton label={t('optimizerModal.altText')} checked={contentType === 'altText'} id="altText" name="contentType" onChange={() => setContentType('altText')} />
                     </BlockStack>
                     
                     <TextArea
@@ -89,11 +124,11 @@ const OptimizeModal = ({ isOpen, onClose, product }) => {
                         placeholder={t('optimizerModal.customInstructionPlaceholder')}
                     />
 
-                    <Button onClick={handleGenerate} loading={seoMutation.isLoading} disabled={!selectedProvider}>
+                    <Button onClick={handleGenerate} loading={seoMutation.isPending} disabled={!selectedProvider}>
                         {t('optimizerModal.generate')}
                     </Button>
                     
-                    {seoMutation.isLoading && <Spinner size="small" />}
+                    {seoMutation.isPending && <Spinner size="small" />}
                     
                     {generatedContent && (
                         <Card>
