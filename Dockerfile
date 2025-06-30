@@ -31,4 +31,3 @@ COPY --from=frontend-builder /app/dist ./frontend/dist
 EXPOSE 8081
 # Set the final command to run the server.
 CMD ["node", "server.js"]
-C
