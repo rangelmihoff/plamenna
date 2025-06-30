@@ -1,13 +1,12 @@
 // frontend/src/App.jsx
 // This is the main application component. It sets up the main layout
 // including the navigation menu and top bar, and renders the routes.
-
 import { Frame, Navigation } from '@shopify/polaris';
 // FINAL AND COMPLETE CORRECTION: All icons have been verified and corrected.
 import {
   HomeIcon,
   ProductIcon,
-  AnalyticsIcon,
+  ReportIcon, // CORRECTED: Using ReportIcon for Analytics for stability.
   SettingsIcon,
   ChatIcon, // Using a known-correct icon for AI Queries
 } from '@shopify/polaris-icons';
@@ -15,12 +14,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppRoutes from './Routes';
 import TopBarMarkup from './components/TopBar.jsx';
-
 function App() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-
   // Define the navigation menu structure with all corrected icons
   const navigationMarkup = (
     <Navigation location={location.pathname}>
@@ -50,7 +47,7 @@ function App() {
           {
             url: '/analytics',
             label: t('navigation.analytics'),
-            icon: AnalyticsIcon,
+            icon: ReportIcon, // CORRECTED with a safe icon
             selected: location.pathname.startsWith('/analytics'),
             onClick: () => navigate('/analytics'),
           },
@@ -65,7 +62,6 @@ function App() {
       />
     </Navigation>
   );
-
   return (
     // The Frame component provides the main structure of an embedded Shopify app
     <Frame
@@ -76,5 +72,4 @@ function App() {
     </Frame>
   );
 }
-
 export default App;
