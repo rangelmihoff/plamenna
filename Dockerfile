@@ -3,9 +3,12 @@
 FROM node:18.18.0-slim AS frontend-builder
 WORKDIR /app
 # Copy the entire frontend folder content directly into the workdir.
-# This makes /app the root of the frontend project during this stage.
 COPY frontend/ .
-# Run install and build. All paths (like ./src/translations/en.json) will be resolved correctly from here.
+# --- DIAGNOSTIC STEP ---
+# List all files recursively to see the exact structure inside the container.
+# This will appear in the build log before the error.
+RUN ls -R
+# Run install and build. We expect this to fail again.
 RUN npm install
 RUN npm run build
 # Stage 2: Backend Builder
@@ -28,3 +31,4 @@ COPY --from=frontend-builder /app/dist ./frontend/dist
 EXPOSE 8081
 # Set the final command to run the server.
 CMD ["node", "server.js"]
+C
