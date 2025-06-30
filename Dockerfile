@@ -1,30 +1,22 @@
-# Stage 1: Frontend Builder
-# Builds the static frontend assets in a completely isolated environment.
-FROM node:18.18.0-slim AS frontend-builder
+# Use a single stage for simplicity and to avoid multi-stage pathing issues
+FROM node:18.18.0-slim
+# Set the main working directory for the project
 WORKDIR /app
-# Copy the entire frontend folder content directly into the workdir.
-# This makes /app the root of the frontend project during this stage.
-COPY frontend/ .
-# Run install and build. All paths (like ./src/translations/en.json) will be resolved correctly from here.
+# Copy all project files into the container
+COPY . .
+# --- Install Backend Dependencies ---
+# Move into the backend directory and install production dependencies
+WORKDIR /app/backend
+RUN npm install --omit=dev
+# --- Install & Build Frontend ---
+# Move into the frontend directory, install dependencies, and run the build
+WORKDIR /app/frontend
 RUN npm install
 RUN npm run build
-# Stage 2: Backend Builder
-# Prepares the backend code and production dependencies in another isolated environment.
-FROM node:18.18.0-slim AS backend-builder
-WORKDIR /app
-# Copy the entire backend folder content into the workdir.
-COPY backend/ .
-# Install only production dependencies.
-RUN npm install --omit=dev
-# Stage 3: Final Production Image
-# Assembles the final, clean image from the previous stages.
-FROM node:18.18.0-slim
-WORKDIR /app
-# Copy the prepared backend (source + node_modules) from the backend-builder stage.
-COPY --from=backend-builder /app/ .
-# Copy the built frontend assets from the frontend-builder stage into the correct final location.
-COPY --from=frontend-builder /app/dist ./frontend/dist
-# Expose the port.
+# --- Final Setup & CMD ---
+# Set the final working directory to the backend folder where server.js is
+WORKDIR /app/backend
+# Expose the port the server will run on
 EXPOSE 8081
-# Set the final command to run the server.
+# The command to start the server. Node will look for server.js in the current WORKDIR.
 CMD ["node", "server.js"]
