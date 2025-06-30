@@ -47,11 +47,11 @@ app.use('/api/analytics', analyticsRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 if (process.env.NODE_ENV === 'production') {
-    // CORRECTED PATH: The backend code now lives in /app, so the path to the
-    // frontend assets is relative to it, without going up one level ('..').
+    // FINAL CORRECTION: The path is now constructed correctly relative to the current file.
+    // __dirname is /app/backend, so we go up one level to /app, then into /frontend/dist.
     const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
     app.use(express.static(frontendDistPath));
-    // CORRECTED PATH for the catch-all route.
+    // The catch-all route now correctly resolves the path to index.html.
     app.get('*', (req, res) => {
         res.sendFile(path.resolve(frontendDistPath, 'index.html'));
     });
