@@ -14,9 +14,10 @@ WORKDIR /app/frontend
 RUN npm install
 RUN npm run build
 # --- Final Setup & CMD ---
-# Set the final working directory to the backend folder where server.js is
-WORKDIR /app/backend
+# Set the final working directory to the project root
+WORKDIR /app
 # Expose the port the server will run on
 EXPOSE 8081
-# The command to start the server. Node will look for server.js in the current WORKDIR.
-CMD ["node", "server.js"]
+# The command to start the server, using an absolute path to server.js
+# This guarantees that the file will be found regardless of the final WORKDIR.
+CMD ["node", "backend/server.js"]
