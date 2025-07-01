@@ -1,7 +1,4 @@
 // backend/controllers/authController.js (Debug Version)
-// FINAL, FINAL, FINAL CORRECTION:
-// Explicitly import the Node.js adapter to tell the Shopify API library
-// which environment it's running in. This resolves the 'abstractRuntimeString' error.
 import '@shopify/shopify-api/adapters/node';
 import asyncHandler from 'express-async-handler';
 import shopify from '@shopify/shopify-api';
@@ -26,8 +23,6 @@ const getShopifyClient = () => {
         hostName: process.env.HOST.replace(/https?:\/\//, ''),
         apiVersion: LATEST_API_VERSION,
         isEmbeddedApp: true,
-        // The library now defaults to in-memory storage when this is omitted,
-        // which is correct for this environment.
     });
 };
 const handleShopifyAuth = asyncHandler(async (req, res) => {
@@ -42,13 +37,17 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
   
   try {
     const shopifyClient = getShopifyClient();
-    const authUrl = await shopifyClient.auth.begin({
+    // FINAL CORRECTION: Pass the request and response objects to the 'begin' method.
+    // The library needs this context to correctly handle the auth flow.
+    await shopifyClient.auth.begin({
       shop: shopDomain,
       callbackPath: '/api/auth/shopify/callback',
       isOnline: false,
+      rawRequest: req,
+      rawResponse: res,
     });
-    logger.info(`Redirecting to Shopify auth URL: ${authUrl.substring(0, 80)}...`);
-    res.redirect(authUrl);
+    // The 'begin' method handles the redirect itself, so no need to call res.redirect() here.
+    logger.info(`Redirecting to Shopify auth URL...`);
   } catch (error) {
     logger.error(`Auth initialization failed: ${error.message}`);
     res.status(500).send(`Server configuration error: ${error.message}. Please check your environment variables in Railway.`);
