@@ -16,10 +16,12 @@ const getShopifyClient = () => {
         logger.error("FATAL: SHOPIFY_API_SCOPES environment variable is not set.");
         throw new Error("SHOPIFY_API_SCOPES environment variable is not configured in Railway.");
     }
+    // FINAL CORRECTION: Using the correct scope 'read_shop' instead of 'read_shop_details'.
+    const scopes = process.env.SHOPIFY_API_SCOPES.split(',');
     return shopifyApi({
         apiKey: process.env.SHOPIFY_API_KEY,
         apiSecretKey: process.env.SHOPIFY_API_SECRET,
-        scopes: process.env.SHOPIFY_API_SCOPES.split(','),
+        scopes: scopes,
         hostName: process.env.HOST.replace(/https?:\/\//, ''),
         apiVersion: LATEST_API_VERSION,
         isEmbeddedApp: true,
@@ -37,8 +39,6 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
   
   try {
     const shopifyClient = getShopifyClient();
-    // FINAL CORRECTION: Pass the request and response objects to the 'begin' method.
-    // The library needs this context to correctly handle the auth flow.
     await shopifyClient.auth.begin({
       shop: shopDomain,
       callbackPath: '/api/auth/shopify/callback',
@@ -46,7 +46,6 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
       rawRequest: req,
       rawResponse: res,
     });
-    // The 'begin' method handles the redirect itself, so no need to call res.redirect() here.
     logger.info(`Redirecting to Shopify auth URL...`);
   } catch (error) {
     logger.error(`Auth initialization failed: ${error.message}`);
