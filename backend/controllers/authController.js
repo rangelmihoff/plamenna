@@ -2,8 +2,12 @@
 // This controller handles the entire Shopify OAuth 2.0 flow.
 
 import asyncHandler from 'express-async-handler';
-// FINAL, FINAL CORRECTION: Import MemorySessionStorage directly from the main package entry point.
-import { shopifyApi, LATEST_API_VERSION, MemorySessionStorage } from '@shopify/shopify-api';
+// FINAL, FINAL, FINAL CORRECTION:
+// The @shopify/shopify-api package is a CommonJS module. To import it correctly in an ES module,
+// we must use a default import and then destructure the required parts from it.
+import shopify from '@shopify/shopify-api';
+const { shopifyApi, LATEST_API_VERSION, MemorySessionStorage } = shopify;
+
 import Shop from '../models/Shop.js';
 import logger from '../utils/logger.js';
 import { createNewSubscription } from '../services/subscriptionService.js';
@@ -40,8 +44,8 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
   logger.info(`Initiating auth for shop: ${shopDomain}`);
   
   try {
-    const shopify = getShopifyClient();
-    const authUrl = await shopify.auth.begin({
+    const shopifyClient = getShopifyClient();
+    const authUrl = await shopifyClient.auth.begin({
       shop: shopDomain,
       callbackPath: '/api/auth/shopify/callback',
       isOnline: false,
@@ -59,8 +63,8 @@ const handleShopifyCallback = asyncHandler(async (req, res) => {
     logger.info('--- Shopify Callback Received ---');
     logger.info(`Callback Query: ${JSON.stringify(req.query)}`);
 
-    const shopify = getShopifyClient();
-    const callback = await shopify.auth.callback({
+    const shopifyClient = getShopifyClient();
+    const callback = await shopifyClient.auth.callback({
       rawRequest: req,
       rawResponse: res,
     });
@@ -71,7 +75,7 @@ const handleShopifyCallback = asyncHandler(async (req, res) => {
 
     let shop = await Shop.findOne({ shopifyDomain });
 
-    const client = new shopify.clients.Rest({ session });
+    const client = new shopifyClient.clients.Rest({ session });
     const shopData = await client.get({ path: 'shop' });
 
     if (shop) {
