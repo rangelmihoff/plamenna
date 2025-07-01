@@ -9,8 +9,15 @@ const router = express.Router();
 // @desc    Initiates the Shopify OAuth process.
 // @route   GET /api/auth/shopify
 // @access  Public
-// The frontend redirects the merchant to this URL.
+// This is the main, correct auth route.
 router.get('/shopify', handleShopifyAuth);
+
+// @desc    A fallback/alias route to catch incorrect installation URLs.
+// @route   GET /api/auth/install
+// @access  Public
+// This makes the app more robust by handling a common setup mistake.
+router.get('/install', handleShopifyAuth);
+
 
 // @desc    Callback URL where Shopify redirects after authentication.
 // @route   GET /api/auth/shopify/callback
