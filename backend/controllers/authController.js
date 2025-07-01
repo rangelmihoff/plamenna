@@ -1,11 +1,9 @@
 // backend/controllers/authController.js (Debug Version)
 // This controller handles the entire Shopify OAuth 2.0 flow.
 import asyncHandler from 'express-async-handler';
-// FINAL, FINAL, FINAL CORRECTION:
-// The @shopify/shopify-api package is a CommonJS module. To import it correctly in an ES module,
-// we must use a default import and then destructure the required parts from it.
+// We only need to import the main library object.
 import shopify from '@shopify/shopify-api';
-const { shopifyApi, LATEST_API_VERSION, SessionStorage } = shopify;
+const { shopifyApi, LATEST_API_VERSION } = shopify;
 import Shop from '../models/Shop.js';
 import logger from '../utils/logger.js';
 import { createNewSubscription } from '../services/subscriptionService.js';
@@ -22,8 +20,9 @@ const getShopifyClient = () => {
         hostName: process.env.HOST.replace(/https?:\/\//, ''),
         apiVersion: LATEST_API_VERSION,
         isEmbeddedApp: true,
-        // Use the correctly imported and instantiated session storage.
-        sessionStorage: new SessionStorage.Memory(),
+        // FINAL, FINAL, FINAL CORRECTION:
+        // We remove the sessionStorage property entirely. The library will default
+        // to an in-memory session storage, which is exactly what we need and avoids all import issues.
     });
 };
 const handleShopifyAuth = asyncHandler(async (req, res) => {
