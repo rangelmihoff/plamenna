@@ -47,9 +47,10 @@ app.use('/api/analytics', analyticsRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 if (process.env.NODE_ENV === 'production') {
-    // FINAL CORRECTION: The path is now constructed correctly relative to the current file.
-    // __dirname is /app/backend, so we go up one level to /app, then into /frontend/dist.
-    const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+    // FINAL, FINAL CORRECTION:
+    // In the final Docker image, __dirname is /app. The frontend assets are in /app/frontend/dist.
+    // Therefore, the correct path is a direct join.
+    const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
     app.use(express.static(frontendDistPath));
     // The catch-all route now correctly resolves the path to index.html.
     app.get('*', (req, res) => {
