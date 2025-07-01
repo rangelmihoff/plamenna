@@ -3,20 +3,18 @@
 
 import asyncHandler from 'express-async-handler';
 import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
+// FINAL CORRECTION: Import MemorySessionStorage from its correct path.
+import { MemorySessionStorage } from '@shopify/shopify-api/session-storage/memory';
 import Shop from '../models/Shop.js';
 import logger from '../utils/logger.js';
 import { createNewSubscription } from '../services/subscriptionService.js';
 import { syncProductsForShop } from '../services/shopifyService.js';
 
 const getShopifyClient = () => {
-    // --- ROBUSTNESS FIX ---
-    // Проверяваме дали HOST променливата е зададена, преди да я използваме.
     if (!process.env.HOST) {
         logger.error("FATAL: HOST environment variable is not set. The app cannot initialize.");
-        // Хвърляме специфична грешка, за да улесним дебъгването.
         throw new Error("HOST environment variable is not configured in Railway.");
     }
-    // --- END FIX ---
 
     return shopifyApi({
         apiKey: process.env.SHOPIFY_API_KEY,
@@ -25,15 +23,14 @@ const getShopifyClient = () => {
         hostName: process.env.HOST.replace(/https?:\/\//, ''),
         apiVersion: LATEST_API_VERSION,
         isEmbeddedApp: true,
-        sessionStorage: new shopifyApi.session.MemorySessionStorage(),
+        // FINAL CORRECTION: Use the correctly imported MemorySessionStorage.
+        sessionStorage: new MemorySessionStorage(),
     });
 };
 
 const handleShopifyAuth = asyncHandler(async (req, res) => {
-  // --- DEBUGGING STEP ---
   logger.info('--- New Auth Request Received ---');
   logger.info(`Request Query: ${JSON.stringify(req.query)}`);
-  // --- END DEBUGGING STEP ---
 
   const shopDomain = req.query.shop;
   if (!shopDomain) {
@@ -54,17 +51,14 @@ const handleShopifyAuth = asyncHandler(async (req, res) => {
     logger.info(`Redirecting to Shopify auth URL: ${authUrl.substring(0, 80)}...`);
     res.redirect(authUrl);
   } catch (error) {
-    // Прихващаме специфичната грешка и изпращаме полезен отговор.
     logger.error(`Auth initialization failed: ${error.message}`);
     res.status(500).send(`Server configuration error: ${error.message}. Please check your environment variables in Railway.`);
   }
 });
 
 const handleShopifyCallback = asyncHandler(async (req, res) => {
-    // --- DEBUGGING STEP ---
     logger.info('--- Shopify Callback Received ---');
     logger.info(`Callback Query: ${JSON.stringify(req.query)}`);
-    // --- END DEBUGGING STEP ---
 
     const shopify = getShopifyClient();
     const callback = await shopify.auth.callback({
