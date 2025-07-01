@@ -16,7 +16,6 @@ const getShopifyClient = () => {
         logger.error("FATAL: SHOPIFY_API_SCOPES environment variable is not set.");
         throw new Error("SHOPIFY_API_SCOPES environment variable is not configured in Railway.");
     }
-    // FINAL CORRECTION: Using the correct scope 'read_shop' instead of 'read_shop_details'.
     const scopes = process.env.SHOPIFY_API_SCOPES.split(',');
     return shopifyApi({
         apiKey: process.env.SHOPIFY_API_KEY,
@@ -64,6 +63,8 @@ const handleShopifyCallback = asyncHandler(async (req, res) => {
     const { shop: shopifyDomain, accessToken } = session;
     logger.info(`Successfully received callback for shop: ${shopifyDomain}`);
     let shop = await Shop.findOne({ shopifyDomain });
+    // The client.get({ path: 'shop' }) call does not require a special scope.
+    // It works with the basic access the app gets upon installation.
     const client = new shopifyClient.clients.Rest({ session });
     const shopData = await client.get({ path: 'shop' });
     if (shop) {
