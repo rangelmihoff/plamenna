@@ -2,9 +2,8 @@
 // This controller handles the entire Shopify OAuth 2.0 flow.
 
 import asyncHandler from 'express-async-handler';
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
-// FINAL CORRECTION: Import MemorySessionStorage from its correct path.
-import { MemorySessionStorage } from '@shopify/shopify-api/session-storage/memory';
+// FINAL, FINAL CORRECTION: Import MemorySessionStorage directly from the main package entry point.
+import { shopifyApi, LATEST_API_VERSION, MemorySessionStorage } from '@shopify/shopify-api';
 import Shop from '../models/Shop.js';
 import logger from '../utils/logger.js';
 import { createNewSubscription } from '../services/subscriptionService.js';
@@ -23,7 +22,7 @@ const getShopifyClient = () => {
         hostName: process.env.HOST.replace(/https?:\/\//, ''),
         apiVersion: LATEST_API_VERSION,
         isEmbeddedApp: true,
-        // FINAL CORRECTION: Use the correctly imported MemorySessionStorage.
+        // Use the correctly imported MemorySessionStorage.
         sessionStorage: new MemorySessionStorage(),
     });
 };
