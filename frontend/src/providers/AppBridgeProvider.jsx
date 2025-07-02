@@ -2,19 +2,20 @@
 // This provider is responsible for initializing the Shopify App Bridge.
 
 import { Provider } from '@shopify/app-bridge-react';
-import { useMemo, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Page, Spinner, Banner } from '@shopify/polaris';
+import { useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Page, Banner } from '@shopify/polaris';
 
 function AppBridgeProvider({ children }) {
   const location = useLocation();
-  const [appBridgeConfig, setAppBridgeConfig] = useState(null);
-  const [isConfigValid, setIsConfigValid] = useState(false);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const shop = searchParams.get('shop');
-    const host = searchParams.get('host');
+  // Use useMemo to parse the URL parameters directly and synchronously.
+  // This is more robust than relying on useEffect for the initial setup.
+  const appBridgeConfig = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const shop = params.get('shop');
+    const host = params.get('host');
 
     // The VITE_SHOPIFY_API_KEY must be set in the Railway environment variables
     // and prefixed with VITE_ to be exposed to the frontend.
@@ -22,54 +23,41 @@ function AppBridgeProvider({ children }) {
 
     if (host && shop && apiKey) {
       try {
-        const decodedHost = atob(host);
-        setAppBridgeConfig({
+        // If all parameters are present, create the config object.
+        return {
           apiKey,
-          host: decodedHost,
+          host: atob(host), // Decode the base64-encoded host
           forceRedirect: true,
-        });
-        setIsConfigValid(true);
+        };
       } catch (e) {
         console.error("Failed to decode host parameter:", e);
-        setIsConfigValid(false);
+        return null;
       }
-    } else {
-      // If parameters are missing, it's likely not embedded in Shopify.
-      console.warn('App Bridge config is missing required parameters (host, shop, or VITE_SHOPIFY_API_KEY).');
-      setIsConfigValid(false);
     }
+    
+    // If any parameter is missing, return null.
+    return null;
   }, [location.search]);
 
-  // While waiting for the configuration to be determined
-  if (appBridgeConfig === null) {
+  // If the configuration is valid, provide the App Bridge context to the children.
+  if (appBridgeConfig) {
     return (
-      <Page>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <Spinner />
-        </div>
-      </Page>
-    );
-  }
-
-  // If the configuration is valid, provide the App Bridge context
-  if (isConfigValid) {
-    return (
-      <Provider config={appBridgeConfig}>
+      <Provider config={appBridgeConfig} router={{ location, navigate }}>
         {children}
       </Provider>
     );
   }
 
-  // If the configuration is invalid, show an error message.
-  // This prevents the infinite redirect loop to /login.
-  return (
-      <Page>
-          <Banner title="Application Error" tone="critical">
-              <p>Could not initialize the application. Required parameters are missing.</p>
-              <p>Please make sure you are opening the app from within the Shopify Admin dashboard and that the app is configured correctly.</p>
-          </Banner>
-      </Page>
-  );
+  // If the configuration is invalid (e.g., app opened outside Shopify),
+  // show an error message. This prevents the infinite redirect loop.
+  // We explicitly check for the /login path to avoid showing this error on the login page itself.
+  if (location.pathname !== '/login') {
+    // A small delay before navigating to login to prevent flashing content.
+    setTimeout(() => navigate('/login'), 50);
+  }
+
+  // Render nothing while the redirect to /login happens.
+  return null;
 }
 
 export default AppBridgeProvider;
